@@ -1,0 +1,132 @@
+
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>BPMN modeler</title>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap -->
+  <link href="./bpmn/css/bootstrap.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="./bpmn/css/fontello.css">
+  <link rel="stylesheet" href="./bpmn/css/animation.css">
+
+  <link rel="stylesheet" href="./bpmn/css/demo.css">
+
+  <script src="./bpmn/js/jquery.min.js"></script>
+  <script src="./bpmn/js/jquery.mousewheel.js"></script>
+
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="./bpmn/js/bootstrap.min.js"></script>
+
+  <!-- svg.js -->
+  <script src="./bpmn/js/svg.min.js"></script>
+  <script src="./bpmn/js/svg.draggy.min.js"></script>
+  <script src="./bpmn/js/svg.bpmnline.js"></script>
+</head>
+<body>
+  <div id="loader" style="display:none;">
+    <i class="animate-spin icon-spin6"></i>
+  </div>
+
+  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1" id="start_dropdown" style="display:none;">
+    <li role="presentation"><a role="menuitem" id="start_dropdown_1" tabindex="-1" href="#">Простое</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="start_dropdown_2" tabindex="-1" href="#">Сообщение</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="start_dropdown_3" tabindex="-1" href="#">Таймер</a></li>
+    <li role="presentation"><a role="menuitem" id="start_dropdown_4" tabindex="-1" href="#"><i class="icon-doc-text"></i>Триггер по событию</a></li>
+    <li role="presentation"><a role="menuitem" id="start_dropdown_5" tabindex="-1" href="#"><i class="icon-collapse"></i>Старт из другого процесса</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="start_dropdown_6" tabindex="-1" href="#"><i class="icon-target"></i>Составное</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="start_dropdown_7" tabindex="-1" href="#">Параллельное составное</a></li>
+    <li role="separator" class="divider"></li>
+    <li role="presentation"><a role="menuitem" id="start_dropdown_card" tabindex="-1" href="#">Карточка объекта</a></li>
+  </ul>
+  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1" id="inter_dropdown" style="display:none;">
+    <li role="presentation"><a role="menuitem" id="inter_dropdown_1" tabindex="-1" href="#">Простое</a></li>
+    <li role="presentation"><a role="menuitem" id="inter_dropdown_2" tabindex="-1" href="#">Почтовое сообщение</a></li>
+    <li role="presentation"><a role="menuitem" id="inter_dropdown_3" tabindex="-1" href="#">Таймер</a></li>
+    <li role="presentation"><a role="menuitem" id="inter_dropdown_4" tabindex="-1" href="#">Получение сообщения</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="inter_dropdown_5" tabindex="-1" href="#">Условное</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="inter_dropdown_6" tabindex="-1" href="#">Ссылка</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="inter_dropdown_7" tabindex="-1" href="#">Ошибка</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="inter_dropdown_8" tabindex="-1" href="#">Отмена</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="inter_dropdown_9" tabindex="-1" href="#">Компенсация</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="inter_dropdown_10" tabindex="-1" href="#">Сигнал</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="inter_dropdown_11" tabindex="-1" href="#">Составное</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="inter_dropdown_12" tabindex="-1" href="#">Параллельное составное</a></li>
+    <li role="separator" class="divider"></li>
+    <li role="presentation"><a role="menuitem" id="inter_dropdown_card" tabindex="-1" href="#">Карточка объекта</a></li>
+  </ul>
+  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1" id="end_dropdown" style="display:none;">
+    <li role="presentation"><a role="menuitem" id="end_dropdown_1" tabindex="-1" href="#">Простое</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="end_dropdown_2" tabindex="-1" href="#">Сообщение</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="end_dropdown_3" tabindex="-1" href="#">Эскалация</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="end_dropdown_4" tabindex="-1" href="#">Ошибка</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="end_dropdown_5" tabindex="-1" href="#">Отмена</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="end_dropdown_6" tabindex="-1" href="#">Компенсация</a></li>
+    <li role="presentation"><a role="menuitem" id="end_dropdown_7" tabindex="-1" href="#">Запуск другого процесса</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="end_dropdown_8" tabindex="-1" href="#">Составное</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="end_dropdown_9" tabindex="-1" href="#">Прекращение</a></li>
+    <li role="separator" class="divider"></li>
+    <li role="presentation"><a role="menuitem" id="end_dropdown_card" tabindex="-1" href="#">Карточка объекта</a></li>
+  </ul>
+  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1" id="task_dropdown" style="display:none;">
+    <li role="presentation"><a role="menuitem" id="task_dropdown_1" tabindex="-1" href="#">Интерактивная (Пользовательская)</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="task_dropdown_2" tabindex="-1" href="#">Ручная</a></li>
+    <li role="presentation"><a role="menuitem" id="task_dropdown_3" tabindex="-1" href="#">Автоматическая (Сервис)</a></li>
+    <li role="presentation"><a role="menuitem" id="task_dropdown_4" tabindex="-1" href="#">Цикл</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="task_dropdown_5" tabindex="-1" href="#">Бизнес-правило</a></li>
+    <li role="presentation"><a role="menuitem" id="task_dropdown_6" tabindex="-1" href="#">Отправка сообщения</a></li>
+    <li role="presentation"><a role="menuitem" id="task_dropdown_7" tabindex="-1" href="#">Получение сообщения</a></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="task_dropdown_8" tabindex="-1" href="#">Нетипизированная, абстрактная</a></li>
+    <li role="separator" class="divider"></li>
+    <li role="presentation"><a role="menuitem" id="task_dropdown_card" tabindex="-1" href="#">Карточка объекта</a></li>
+  </ul>
+  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1" id="decision_dropdown" style="display:none;">
+    <li role="presentation"><a role="menuitem" id="decision_dropdown_1" tabindex="-1" href="#">И</a></li>
+    <li role="presentation"><a role="menuitem" id="decision_dropdown_2" tabindex="-1" href="#">ИЛИ</a></li>
+    <li role="presentation"><a role="menuitem" id="decision_dropdown_3" tabindex="-1" href="#">Искл ИЛИ</a></li>
+    <li role="separator" class="divider"></li>
+    <li role="presentation"><a role="menuitem" id="decision_dropdown_card" tabindex="-1" href="#">Карточка объекта</a></li>
+  </ul>
+  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1" id="pull_dropdown" style="display:none;">
+    <li role="presentation"><a role="menuitem" id="pull_dropdown_card" tabindex="-1" href="#">Карточка объекта</a></li>
+  </ul>
+  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1" id="line_dropdown" style="display:none;">
+    <li role="presentation"><a role="menuitem" id="line_dropdown_1" tabindex="-1" href="#">Обычная</a></li>
+    <li role="presentation"><a role="menuitem" id="line_dropdown_2" tabindex="-1" href="#">Пунктирная</a></li>
+    <!--<li role="separator" class="divider"></li>
+    <li role="presentation"><a class="inactive" role="menuitem" id="line_dropdown_card" tabindex="-1" href="#">Карточка объекта</a></li>-->
+  </ul>
+
+  <textarea id="input_textarea" style="display:none; z-index: 1; width: 200px; height: 100px; text-align: center; box-sizing: border-box; margin: 0px;"></textarea>
+
+  <div id="drawing">
+    <button type="button" class="btn btn-default" title="Стартовое событие" onclick="addCircle(1)"><img src="./bpmn/images/circle.png"></button>
+    <button type="button" class="btn btn-default" title="Промежуточное событие" onclick="addCircle(2)"><img src="./bpmn/images/circle2.png"></button>
+    <button type="button" class="btn btn-default" title="Завершающее событие" onclick="addCircle(3)"><img src="./bpmn/images/circle3.png"></button>
+    <button type="button" class="btn btn-default" title="Задача (операция)" onclick="addTask()"><img src="./bpmn/images/block.png"></button>
+    <button type="button" class="btn btn-default" title="Решение" onclick="addDecision()"><img src="./bpmn/images/romb.png"></button>
+    <button type="button" class="btn btn-default" title="Пул (дорожка)" onclick="addPull()"><img src="./bpmn/images/pull.png"></button>
+  </div>
+  <div id="saving">
+    <button type="button" class="btn btn-default" title="Сохранить схему в БД" onclick="saveGraph()">
+      <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span>
+    </button>
+    <!--<button type="button" class="btn btn-success" title="Обновить (перезагрузить) схему" onclick="loadGraph(4)">-->
+    <button type="button" class="btn btn-success" title="Обновить (перезагрузить) схему" onclick="location.reload(true)">
+      <span class="glyphicon glyphicon-refresh" aria-hidden="true"></span>
+    </button>
+    <!--<button type="button" class="btn btn-danger" title="Шаг назад" onclick="goBack()">
+      <span class="glyphicon glyphicon-backward" aria-hidden="true"></span>
+    </button>-->
+  </div>
+  <div class="graph"></div>
+
+  <script src="./bpmn/js/handlers.js"></script>
+  <script>
+        //loadGraph(4);
+  </script>
+</body>
+</html>

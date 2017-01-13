@@ -1,0 +1,164 @@
+html, body {height:100%;}
+
+#loader {
+  width: 100%;
+  z-index: 1000;
+  height: 100%;
+  position: absolute;
+  background: rgba(0,0,0,0.7);
+  text-align: center;
+  font-size: 34px;
+  color: orange;
+  padding-top: 25%;
+}
+
+
+.title {
+    font-family: 'Inconsolata', monospace;
+    font-weight: bold;
+}
+
+header {
+    padding: 8em 0;
+}
+
+header, footer {
+    color: white;
+    background: #e91e63;
+    background-image: url("background.png");
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.51);
+}
+
+h1.title {
+    font-size: 4em;
+    font-weight: bold;
+}
+
+pre {
+    background: #212121;
+    color: white;
+}
+
+header p {
+    font-size: 1.4em;
+}
+
+footer {
+    padding: 50px 0;
+    text-align: center;
+    font-size: 1.1em;
+    margin-top: 3em;
+}
+
+footer a {
+    color: white;
+}
+
+footer a:hover {
+    color: white;
+}
+
+line {
+    stroke-width: 2px;
+}
+
+.graph {
+  cursor: default;
+    background: #FCFCFC;
+    /*border: 1px solid #ccc;
+    border-radius: 4px;*/
+    height: 100%;
+	width: 100%;
+	overflow: hidden;
+}
+
+.preview {
+	/*height: 300px;*/
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	/*pointer-events: none;*/
+}
+.preview_blank {
+	/*pointer-events: none;*/
+}
+
+#jsonOutput {
+    background: #eee;
+    /*border: 1px solid #ccc;
+    border-radius: 4px;*/
+    height: 20%;
+}
+
+#mydiv {
+	text-align: center;
+}
+
+#drawing {
+	position: absolute;
+	left: 20px;
+	top: 20px;
+	overflow: hidden;
+
+	background: #FAFAFA;
+	border: solid 1px #CCC;
+	border-radius: 2px;
+	box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+
+	z-index: 1;
+	width: 60px;
+	text-align: center;
+	line-height: 46px;
+
+}
+
+#saving{
+	position: absolute;
+	left: 20px;
+	bottom: 20px;
+	overflow: hidden;
+
+	background: #FAFAFA;
+	border: solid 1px #CCC;
+	border-radius: 2px;
+	box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+
+	z-index: 1;
+	width: 150px;
+	text-align: center;
+	line-height: 46px;
+
+}
+
+
+
+/*
+width: 46px;
+  height: 46px;
+  line-height: 46px;
+
+
+*/
+
+
+.dropdown-menu > li > a.inactive {
+	color: red;
+	cursor: not-allowed;
+	color: #888;
+
+}
+
+
+.noselect {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.group {
+	background: rgba(252,252,252,0.85);
+
+}
