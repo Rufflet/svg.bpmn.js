@@ -3,28 +3,30 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>BPMN modeler 3</title>
+  <title>BPMN modeler</title>
   <meta http-equiv="content-type" content="text/html;charset=utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Bootstrap -->
-  <link href="./bpmn/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/bootstrap.min.css" rel="stylesheet">
 
-  <link rel="stylesheet" href="./bpmn/css/fontello.css">
-  <link rel="stylesheet" href="./bpmn/css/animation.css">
+  <link rel="stylesheet" href="css/fontello.css">
+  <link rel="stylesheet" href="css/animation.css">
 
-  <link rel="stylesheet" href="./bpmn/css/demo.css">
+  <link rel="stylesheet" href="css/demo.css">
 
-  <script src="./bpmn/js/jquery.min.js"></script>
-  <script src="./bpmn/js/jquery.mousewheel.js"></script>
+  <script src="js/jquery.min.js"></script>
+  <script src="js/jquery.mousewheel.js"></script>
 
   <!-- Latest compiled and minified JavaScript -->
-  <script src="./bpmn/js/bootstrap.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
 
   <!-- svg.js -->
-  <script src="./bpmn/js/svg.min.js"></script>
-  <script src="./bpmn/js/svg.draggy.min.js"></script>
-  <script src="./bpmn/js/svg.bpmnline.js"></script>
+  <script src="js/svg.min.js"></script>
+  <script src="js/svg.draggy.min.js"></script>
+  <script src="js/svg.bpmnmodeler.js"></script>
+  <script src="js/svg.bpmnnode.js"></script>
+  <script src="js/svg.bpmnline.js"></script>
 </head>
 <body>
   <div id="loader" style="display:none;">
@@ -103,14 +105,18 @@
   <textarea id="input_textarea" style="display:none; z-index: 1; width: 200px; height: 100px; text-align: center; box-sizing: border-box; margin: 0px;"></textarea>
 
   <div id="drawing">
-    <button type="button" class="btn btn-default" title="Стартовое событие" onclick="addCircle(1)"><img src="./bpmn/images/circle.png"></button>
-    <button type="button" class="btn btn-default" title="Промежуточное событие" onclick="addCircle(2)"><img src="./bpmn/images/circle2.png"></button>
-    <button type="button" class="btn btn-default" title="Завершающее событие" onclick="addCircle(3)"><img src="./bpmn/images/circle3.png"></button>
-    <button type="button" class="btn btn-default" title="Задача (операция)" onclick="addTask()"><img src="./bpmn/images/block.png"></button>
-    <button type="button" class="btn btn-default" title="Решение" onclick="addDecision()"><img src="./bpmn/images/romb.png"></button>
-    <button type="button" class="btn btn-default" title="Пул (дорожка)" onclick="addPull()"><img src="./bpmn/images/pull.png"></button>
+    <button type="button" class="btn btn-info" title="Стартовое событие" onclick="scalegroup.bpmnnode({ type: 'event', subtype: 'start' })"><img src="images/circle.png"></button>
+    <button type="button" class="btn btn-default" title="Стартовое событие" onclick="addCircle(1)"><img src="images/circle.png"></button>
+    <button type="button" class="btn btn-default" title="Промежуточное событие" onclick="addCircle(2)"><img src="images/circle2.png"></button>
+    <button type="button" class="btn btn-default" title="Завершающее событие" onclick="addCircle(3)"><img src="images/circle3.png"></button>
+    <button type="button" class="btn btn-default" title="Задача (операция)" onclick="addTask()"><img src="images/block.png"></button>
+    <button type="button" class="btn btn-default" title="Решение" onclick="addDecision()"><img src="images/romb.png"></button>
+    <button type="button" class="btn btn-default" title="Пул (дорожка)" onclick="addPull()"><img src="images/pull.png"></button>
   </div>
   <div id="saving">
+    <button type="button" class="btn btn-info" title="Открыть тестовую схему" onclick="loadGraph()">
+      <span class="glyphicon glyphicon-floppy-open" aria-hidden="true"></span>
+    </button>
     <button type="button" class="btn btn-default" title="Сохранить схему в БД" onclick="saveGraph()">
       <span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span>
     </button>
@@ -124,7 +130,7 @@
   </div>
   <div class="graph"></div>
 
-  <script src="./bpmn/js/handlers.js"></script>
+  <script src="js/main.js"></script>
   <script>
         //loadGraph(4);
   </script>
