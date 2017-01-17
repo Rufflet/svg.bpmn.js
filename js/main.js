@@ -63,7 +63,9 @@ var customclick; //flag кастомного события при клике н
 x_offset = 0;
 y_offset = 0;
 
-var svg = SVG($(".graph").get(0)).size("100%", "100%").spof();
+//var svg = SVG($(".graph").get(0)).size("100%", "100%").spof();
+var svg = SVG('baseLayer')
+
 //var links = svg.group();
 var markers = svg.group();
 
@@ -2848,37 +2850,42 @@ if (scalable) {
 }
 
 
-
+//move to modeler.js
 function paning(e) {
+	//console.log('paning')
+	var stx = e.pageX,
+			sty = e.pageY,
+			mx, my
+	svg.style('cursor', 'move')
 
-	var stx = e.pageX;
-	var sty = e.pageY;
-	var mx
-	var my
-
-	$('.graph').on('mousemove', function(e) {
-		/*if (e.pageX>stx) { mx = 1}
-		else if (e.pageX<stx) { mx = -1}
-		else mx=0
-
-		if (e.pageY>sty) { my = 1}
-		else if (e.pageY<sty) { my = -1}
-		else my=0*/
-
-
+	svg.mousemove(function(e) {
+		//console.log('paning mousemove')
 		mx = e.pageX - stx
 		my = e.pageY - sty
 
-		scalegroup.dmove(mx,my)
-		stx = e.pageX;
-		sty = e.pageY;
+		scalegroup.dmove(mx,my) //todo change to parent or doc
+		stx = e.pageX
+		sty = e.pageY
 	})
-	$('.graph').on('mouseup', function(e) {
-		//console.log('up x=' +scalegroup.x() + ' y='+ scalegroup.y())
-		$( this ).css('cursor', 'default')
-		$( this ).off('mousemove')
+	
+	svg.mouseup(function(e) {
+		//console.log('paning mouseup ', this)
+		this.style('cursor', 'default')
+		this.mousemove(null)
 	})
 };
+
+svg.mousedown(function (e) {
+	paning(e);
+})
+
+
+
+
+
+
+
+
 
 function edgeOfView(rect, deg) {
   var twoPI = Math.PI*2;
