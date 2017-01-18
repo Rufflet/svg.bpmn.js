@@ -60,7 +60,8 @@ function stopDrawLine(e,elem) {
                 //if (debuggable) console.log('try to connect with ' + this.attr('id'))
 
                 if (this.data('is-node') == true && this.data('type') != 'pull') {
-                    scalegroup.add(svg.bpmnline({ fromid: elem.attr('id'), toid: this.attr('id') }))
+                    //scalegroup.add(svg.bpmnline({ fromid: elem.attr('id'), toid: this.attr('id') }))
+                    elem.parent('.viewport').bpmnline({ fromid: elem.attr('id'), toid: this.attr('id') })
                 } else {
                     //if (debuggable) console.log('data false')
                     //if (debuggable) console.log('type ' + this.data('type'))

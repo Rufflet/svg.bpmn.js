@@ -49,11 +49,11 @@ SVG.Bpmnnode = SVG.invent({
             , type: prop.type //likely to remove
             //, subtype: prop.subtype //likely to remove
             //, 'inner-type': prop.innertype //likely to remove
-            , 'element-id': prop.id //prop.subtype + '-' + prop.type + '-' + bpmnNodesCounter++
+            //, 'element-id': prop.id //prop.subtype + '-' + prop.type + '-' + bpmnNodesCounter++
             //, 'inner-text': prop.innertext //likely to remove
             
         })
-
+        this.attr('id', prop.id)
         if (prop.parent != -1 ) {
             this.data('parent', prop.parent)
             if (debuggable) console.log(this.data('parent'))
@@ -570,11 +570,12 @@ SVG.Bpmnnode = SVG.invent({
 
 
 
-    },
-    inherit: SVG.G,
-    extend: {
+    }
+    , inherit: SVG.G
+    , extend: {
+        //For proper node text placing
         updateText: function (innerTextStrings) {
-            var innerText = SVG.get(this.data('element-id')+'-innertext')
+            var innerText = SVG.get(this.attr('id')+'-innertext')
             innerTextStrings = typeof innerTextStrings !== 'undefined' ? innerTextStrings.split('\n') : innerText.text().split('\n')
             innerText.text(function (add) {
                 for (i = 0; i < innerTextStrings.length; i++) {
@@ -584,8 +585,10 @@ SVG.Bpmnnode = SVG.invent({
             innerText.lines().each(function (i, children) {
                 this.dx(-this.length() / 2 + nodeOptions.sizes.event/2)
             })
-        },
-        update: function (initially) {
+
+            return this
+        }
+        /*, update: function (initially) {
             this.clear();
             var prop = {
                 fromid: this.data('idfrom'),
@@ -601,11 +604,11 @@ SVG.Bpmnnode = SVG.invent({
             if (initially) prop.path = -1
 
             return this.draw(prop);
-        }
-    },
-    construct: {
+        }*/
+    }
+    , construct: {
         bpmnnode: function( prop ) {
-            return this.put(new SVG.Bpmnnode( prop ))//.updateText() TODO: разобраться с выравниванием текста
+            return this.put(new SVG.Bpmnnode( prop )).updateText()
         }
     }
 });
