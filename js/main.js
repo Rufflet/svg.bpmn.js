@@ -69,7 +69,7 @@ var svg = SVG('baseLayer')
 //var links = svg.group();
 var markers = svg.group();
 
-var scalegroup = svg.group().attr('id', 'scalegroup').size("100%", "100%");
+var scalegroup = svg.group().attr('id', 'scalegroup').addClass('viewport').size("100%", "100%");
 
 //zero point
 var zeropoint = svg.group().attr('id', 'zeropoint');
