@@ -24,6 +24,8 @@
   <!-- svg.js -->
   <script src="js/svg.min.js"></script>
   <script src="js/svg.draggy.min.js"></script>
+  <!--<script src="js/svg.pan-zoom.js"></script>-->
+  
   <script src="js/svg.bpmnmodeler.js"></script>
   <script src="js/svg.bpmnnode.js"></script>
   <script src="js/svg.bpmnline.js"></script>
@@ -106,12 +108,15 @@
 
   <div id="drawing">
     <button type="button" class="btn btn-info" title="Стартовое событие" onclick="scalegroup.bpmnnode({ type: 'event', subtype: 'start' })"><img src="images/circle.png"></button>
+    <button type="button" class="btn btn-warning" title="Стартовое событие" onclick="floatingAdd(event)">float</button>
+    <hr>
     <button type="button" class="btn btn-default" title="Стартовое событие" onclick="addCircle(1)"><img src="images/circle.png"></button>
     <button type="button" class="btn btn-default" title="Промежуточное событие" onclick="addCircle(2)"><img src="images/circle2.png"></button>
     <button type="button" class="btn btn-default" title="Завершающее событие" onclick="addCircle(3)"><img src="images/circle3.png"></button>
     <button type="button" class="btn btn-default" title="Задача (операция)" onclick="addTask()"><img src="images/block.png"></button>
     <button type="button" class="btn btn-default" title="Решение" onclick="addDecision()"><img src="images/romb.png"></button>
     <button type="button" class="btn btn-default" title="Пул (дорожка)" onclick="addPull()"><img src="images/pull.png"></button>
+
   </div>
   <div id="saving">
     <button type="button" class="btn btn-info" title="Открыть тестовую схему" onclick="loadGraph()">
@@ -128,7 +133,7 @@
       <span class="glyphicon glyphicon-backward" aria-hidden="true"></span>
     </button>-->
   </div>
-  <div class="graph"></div>
+  <div id="baseLayer"></div>
 
   <script src="js/main.js"></script>
   <script>

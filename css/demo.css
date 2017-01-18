@@ -62,14 +62,12 @@ line {
     stroke-width: 2px;
 }
 
-.graph {
-  cursor: default;
+#baseLayer {
+    cursor: default;
     background: #FCFCFC;
-    /*border: 1px solid #ccc;
-    border-radius: 4px;*/
     height: 100%;
-	width: 100%;
-	overflow: hidden;
+    width: 100%;
+    overflow: hidden;
 }
 
 .preview {

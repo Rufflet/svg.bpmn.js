@@ -2825,13 +2825,13 @@ function goBack() {
 
 };
 
-var MAX_ZOOM_IN = 2.0;
+var MAX_ZOOM_IN = 3.0;
 var MAX_ZOOM_OUT = 0.5;
 var zoomStep = 0.2;
 var actualZoom = 1.0;
 var MOVE_STEP = 100;
 if (scalable) {
-	$('.graph').on('mousewheel', function(e) {
+	svg.on('mousewheel', function(e) { // TODO: invert scroll, use native event (div on scroll)
 		 if (debuggable) console.log(e.deltaX, e.deltaY, e.deltaFactor);
 		 if (e.deltaY>0 && actualZoom < MAX_ZOOM_IN) {
 			actualZoom += zoomStep;
@@ -2846,44 +2846,41 @@ if (scalable) {
 			}
 
 		}
+		
 	})
 }
 
 
 //move to modeler.js
 function paning(e) {
-	//console.log('paning')
-	var stx = e.pageX,
-			sty = e.pageY,
-			mx, my
-	svg.style('cursor', 'move')
+	if (!isPlacing) {
+		console.log('paning')
+		var stx = e.pageX
+			, sty = e.pageY
+			, mx, my
+			, moveFunc = function (e) {
+					console.log('paning mousemove')
+					mx = (e.pageX - stx) / actualZoom
+					my = (e.pageY - sty) / actualZoom
+					//console.log('this ', this)
+					scalegroup.dmove(mx, my) //todo change to parent or doc
+					stx = e.pageX
+					sty = e.pageY
+			}
+			,	upFunc = function (e) {
+					console.log('paning mouseup ', this)
+					this.style('cursor', 'default')
+					this.off('mousemove', moveFunc)
+					this.off('mouseup', upFunc)
+			}
 
-	svg.mousemove(function(e) {
-		//console.log('paning mousemove')
-		mx = e.pageX - stx
-		my = e.pageY - sty
+		svg.style('cursor', 'move')
+		svg.on('mousemove', moveFunc)
+		svg.on('mouseup', upFunc)
+	}
+}
 
-		scalegroup.dmove(mx,my) //todo change to parent or doc
-		stx = e.pageX
-		sty = e.pageY
-	})
-	
-	svg.mouseup(function(e) {
-		//console.log('paning mouseup ', this)
-		this.style('cursor', 'default')
-		this.mousemove(null)
-	})
-};
-
-svg.mousedown(function (e) {
-	paning(e);
-})
-
-
-
-
-
-
+svg.on('mousedown', paning)
 
 
 

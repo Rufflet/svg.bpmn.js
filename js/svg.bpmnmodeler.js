@@ -1,10 +1,11 @@
 /*
-Change scalegroup to another container
+TODO: Change scalegroup to another container (viewport)
 
 */
 
 
-var bpmnNodesCounter = 0;
+var bpmnNodesCounter = 0,
+    isPlacing = false //for placing aka floatingAdd TODO: change proc name
 
 function getBpmnNodesCounter(){
     return bpmnNodesCounter++
@@ -24,24 +25,20 @@ nodeOptions.sizes.event = 50
 nodeOptions.colors.activity = 100
 
 var drawLine
-function startDrawLine(e) {
+function startDrawLine() {
     console.log("startDrawLine")
-    drawLine = svg.line(0, 0, 0, 0)
-                  .attr({
-                      stroke: '#333333',
-                      'stroke-width': '1',
-                      'stroke-dasharray': '2,2'
-                    })
+    drawLine = svg.line(0, 0, 0, 0).attr({ stroke: '#333333', 'stroke-width': '1', 'stroke-dasharray': '2,2' })
 }
 
 function procDrawLine(e,elem) {
-    // console.log(e.pageX)
-    // console.log(elem.cx())
+    //console.log(e)
+    //console.log(elem.cx())
     //drawLine = svg.line(this.cx(), this.cy(), this.cx(), this.cy()).stroke({ width: 1 });
     
-    var x1 = elem.cx()// * actualZoom + scalegroup.x()
-    var y1 = elem.cy()// * actualZoom + scalegroup.y()
-
+    var scgtransf = scalegroup.transform()
+    var x1 = elem.x() * actualZoom + scgtransf.x
+    var y1 = elem.y() * actualZoom + scgtransf.y
+    
     var x2 = e.pageX
     var y2 = e.pageY
 
@@ -60,36 +57,23 @@ function stopDrawLine(e,elem) {
     if (!elem.insideGbox(e.pageX, e.pageY)) {
         scalegroup.each(function (i, children) {
             if (this.data('is-node') == true && this.insideGbox(e.pageX, e.pageY)) {
-                //if (debuggable)
-                console.log('try to connect with ' + this.attr('id'))
+                //if (debuggable) console.log('try to connect with ' + this.attr('id'))
 
                 if (this.data('is-node') == true && this.data('type') != 'pull') {
                     scalegroup.add(svg.bpmnline({ fromid: elem.attr('id'), toid: this.attr('id') }))
                 } else {
-                    //if (debuggable)
-                    console.log('data false')
-                    //if (debuggable)
-                    console.log('type ' + this.data('type'))
+                    //if (debuggable) console.log('data false')
+                    //if (debuggable) console.log('type ' + this.data('type'))
                 }
             } else {
-                //if (debuggable)
-                console.log('this outside')
+                //if (debuggable) console.log('this outside')
             }
 
         })
     }
 }
 
-
-
-
-
-
-
-
-
-
-function getIconByType(selectedType,modelId,objId) {
+function getIconByType(selectedType, modelId, objId) {
     //console.log(selectedType,modelId,objId)
     switch (selectedType) {
         case 'start_dropdown_1':
@@ -120,4 +104,59 @@ function getIconByType(selectedType,modelId,objId) {
         default:
             return ''
     }
+}
+
+
+//nodes floating adding
+function floatingAdd(e) {
+    var newObj = scalegroup.bpmnnode({ type: 'event', subtype: 'start' })
+      , scgtransf = scalegroup.transform()
+      , moFunc = function (e) {
+            console.log('window mousemove')
+            newObj.move((e.pageX-scgtransf.x)/ actualZoom, (e.pageY-scgtransf.y)/ actualZoom)
+		}
+	  , downFunc = function (e) {
+            console.log('window mousedown')
+            e.stopPropagation();
+            SVG.off(window, 'mousemove', moFunc)
+            SVG.off(window, 'mousedown', downFunc)
+            //svg.off('mousedown', paning)
+            
+            isPlacing = false
+
+		}
+    
+    isPlacing = true    
+    newObj.move(e.pageX, e.pageY)
+    
+    svg.off('mousedown', paning)
+    //svg.off('mousemove', moveFunc) //TODO also turn off this listener
+	//svg.off('mouseup', null) //TODO change null to func
+
+    SVG.on(window, 'mousemove', moFunc)
+    SVG.on(window, 'mousedown', downFunc)
+    
+   /* SVG.on(window, 'mousemove', function (e) {
+        console.log('window mousemove')
+        newObj.move((e.pageX-scgtransf.x)/ actualZoom, (e.pageY-scgtransf.y)/ actualZoom)
+        
+    })
+    SVG.on(window, 'mousedown', function (e) {
+        console.log('window mousedown')
+        SVG.off(window, 'mousemove', null)
+        //SVG.off(window, 'mousedown', null)
+        //svg.on('mousedown', paning)
+        
+    })*/
+
+
+    /*svg.mousemove(function(e) {
+        newObj.move(e.pageX,e.pageY)    
+    })
+    svg.mousedown(function (e) {
+        this.mousemove(null)
+        paning(e);
+    })
+    */
+
 }

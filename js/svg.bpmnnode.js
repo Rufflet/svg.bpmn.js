@@ -46,7 +46,7 @@ SVG.Bpmnnode = SVG.invent({
 
         this.data({
             'is-node': 'true'
-            //, type: prop.type //likely to remove
+            , type: prop.type //likely to remove
             //, subtype: prop.subtype //likely to remove
             //, 'inner-type': prop.innertype //likely to remove
             , 'element-id': prop.id //prop.subtype + '-' + prop.type + '-' + bpmnNodesCounter++
@@ -301,6 +301,7 @@ SVG.Bpmnnode = SVG.invent({
         }
 
         this.on('click', function (e) {
+            console.log("click");
             if (editable) {
                 this.front()
                 shapeOuter.attr({ stroke: nodeOptions.colors.selected }).show()
@@ -311,38 +312,42 @@ SVG.Bpmnnode = SVG.invent({
                 
                 if (debuggable) console.log("click");
                 
-                document.addEventListener('mousedown', function (e) {
-                    var xx = (e.pageX - scalegroup.x()) / actualZoom,
-                        yy = (e.pageY - scalegroup.y()) / actualZoom
+                if (!isPlacing) {
+                    //TODO: move this func somewhere
+                    document.addEventListener('mousedown', function (e) {
+                        var xx = (e.pageX - scalegroup.x()) / actualZoom,
+                            yy = (e.pageY - scalegroup.y()) / actualZoom
 
 
-                    console.log('Parent is ' + element.parent('#scalegroup'))
+                        console.log('Parent is ' + element.parent('#scalegroup'))
 
-                    if (element.insideGbox(e.pageX, e.pageY)) {
-                        if (debuggable) console.log("inside")
-                        //document.removeEventListener('mousedown', arguments.callee);
-                    } else {
-                        if (e.target.nodeName != 'A' && e.target.nodeName != 'TEXTAREA') {
-                            if (debuggable) console.log("click on " + e.target.nodeName + " is outside")
-                            menuBackgrnd.hide()
-                            draw.hide()
-                            del.hide()
-                            settings.hide()
+                        if (element.insideGbox(e.pageX, e.pageY)) {
+                            if (debuggable) console.log("inside")
+                            //document.removeEventListener('mousedown', arguments.callee);
+                        } else {
+                            if (e.target.nodeName != 'A' && e.target.nodeName != 'TEXTAREA') {
+                                if (debuggable) console.log("click on " + e.target.nodeName + " is outside")
+                                menuBackgrnd.hide()
+                                draw.hide()
+                                del.hide()
+                                settings.hide()
 
-                            shapeOuter.hide().attr({ stroke: nodeOptions.colors.hovered })
+                                shapeOuter.hide().attr({ stroke: nodeOptions.colors.hovered })
 
-                            $('#start_dropdown li a').off()
-                            $('#inter_dropdown li a').off()
-                            $('#end_dropdown li a').off()
-                            $('#start_dropdown').hide()
-                            $('#inter_dropdown').hide()
-                            $('#end_dropdown').hide()
+                                $('#start_dropdown li a').off()
+                                $('#inter_dropdown li a').off()
+                                $('#end_dropdown li a').off()
+                                $('#start_dropdown').hide()
+                                $('#inter_dropdown').hide()
+                                $('#end_dropdown').hide()
 
-                            document.removeEventListener('mousedown', arguments.callee)
+                                document.removeEventListener('mousedown', arguments.callee)
+                            }
                         }
-                    }
-                })
+                    })
+                }
             } else {
+                console.log('else')
                 if (typeof customclick === "function") {
                     customclick(this.attr('id'));
                 } else {
@@ -374,7 +379,7 @@ SVG.Bpmnnode = SVG.invent({
                             $('#preview_dropdown').hide()
                         }
                     });
-
+                    
                     document.addEventListener('mousedown', function (e) {
                         //var xx = (e.pageX - scalegroup.x())/actualZoom
                         //var yy = (e.pageY - scalegroup.y())/actualZoom
@@ -451,8 +456,8 @@ SVG.Bpmnnode = SVG.invent({
         })
 
         settings.click(function (e) {
-            var xx = e.pageX - $('.graph').offset().left,
-                yy = e.pageY - $('.graph').offset().top
+            var xx = e.pageX// - $('.graph').offset().left,
+              , yy = e.pageY// - $('.graph').offset().top
 
             if (prop.subtype == 'start') {
                 $('#' + prop.subtype + '_dropdown').css({ 'position': 'absolute', 'left': xx, 'top': yy }).show()
@@ -470,19 +475,80 @@ SVG.Bpmnnode = SVG.invent({
             }
         })
 
-        draw.click(function(e) {
-            startDrawLine();
-            //document.addEventListener('mousemove', function(e) { procDrawLine(e, element) }, false)
-            //document.addEventListener('click', function(e) { stopDrawLine(e, element) }, false)
-            document.addEventListener('mousemove',procWrap=function(e){procDrawLine(e,element)},false);
-            document.addEventListener('click',stopWrap=function(e){stopDrawLine(e,element)},false);
-            
+        draw.click(function (e) {
+            startDrawLine()
+            document.addEventListener('mousemove', procWrap = function (e) { procDrawLine(e, element) }, false)
+            document.addEventListener('click', stopWrap = function (e) { stopDrawLine(e, element) }, false)
             e.stopPropagation()
         })
 
-        del.click(function(e) {
+        del.click(function (e) {
             element.remove()
             e.stopPropagation()
+        })
+
+        //Draggin listeners
+        this.on('dragstart', function(e) {
+            //$('.graph').off('mousedown')
+            svg.off('mousedown', paning)
+        })
+        
+        var drgmove = false
+        this.on('dragmove', function(e) {
+            drgmove = true;
+
+            //check if node is over pull
+            //if (debuggable) console.log('dragmove');
+            scalegroup.each(function(i, children) {
+                if (this.data('type')=='pull') {
+            var scgtransf = scalegroup.transform()
+            var thistransf = circle.transform()
+            var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
+            var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
+                    if (this.insideGbox(xx, yy)) {
+                        if (debuggable) console.log('hover inside ' + this.attr('id'));
+                        this.first().show();
+                    } else {
+                        if (debuggable) console.log('hover not inside ' + this.attr('id'));
+                        this.first().hide();
+                    }
+                }
+            });
+        })
+
+        this.on('dragend', function (e) {
+            if (!isPlacing) {
+            //if (debuggable) console.log('dragend');
+            //check if node is over pull
+            var found = false;
+            scalegroup.each(function (i, children) {
+                if (this.data('type') == 'pull' && !found) {
+                    var scgtransf = scalegroup.transform()
+                    var thistransf = element.transform()
+                    var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
+                    var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
+                    if (this.insideGbox(xx, yy)) {
+                        if (debuggable) console.log('end inside ' + this.attr('id'));
+                        element.data('parent', this.attr('id'))
+                        found = true;
+                    } else {
+                        if (debuggable) console.log('end not inside ' + this.attr('id'));
+                        element.data('parent', null)
+                    }
+                    this.first().hide();
+                }
+            });
+            if (drgmove) {
+                scalegroup.each(function (i, children) {
+                    if (this.data('idfrom') == element.attr('id') || this.data('idto') == element.attr('id')) {
+                        this.update(true);
+                    }
+                })
+            }
+
+            drgmove = false;
+            svg.on('mousedown', paning)
+            }
         })
 
         
@@ -539,7 +605,7 @@ SVG.Bpmnnode = SVG.invent({
     },
     construct: {
         bpmnnode: function( prop ) {
-            return this.put(new SVG.Bpmnnode( prop )).updateText()
+            return this.put(new SVG.Bpmnnode( prop ))//.updateText() TODO: разобраться с выравниванием текста
         }
     }
 });
