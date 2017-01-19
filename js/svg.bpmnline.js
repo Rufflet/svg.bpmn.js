@@ -6,7 +6,7 @@ TODO:
 - изначально рисиовать максимально простые линии
 	- если на одной прямой
 	- убирать лишний бендпоинт при первой отрисовке
-
+- move data to memory
 
 */
 
@@ -101,12 +101,6 @@ SVG.Bpmnline = SVG.invent({
 					this.dx(-this.length() / 2 + 25)
 				})
 				//TODO: new way for text splitin
-				
-
-
-
-
-
 			} else {
 				connectionText.hide();
 			}
@@ -127,6 +121,7 @@ SVG.Bpmnline = SVG.invent({
 					svg.on('mousedown', paning)
 				})
 			}
+
 			var bendpointId //current dragging bendpoint
 			  , prevx, prevy, nextx, nexty
 			  , parent = -1
@@ -137,50 +132,6 @@ SVG.Bpmnline = SVG.invent({
 			  , x_to = nodeTo.x()
 			  , y_to = nodeTo.y()
 			  , x2, y2, x3, y3, x4, y4
-
-			if (nodeFrom.data('parent') != -1) {
-				parent = nodeFrom.data('parent');
-			}
-			if (nodeTo.data('parent') != -1 && nodeTo.data('parent') != parent) {
-				parent += ',' + nodeTo.data('parent');
-			}
-			if (debuggable) console.log('parents for line is ' + parent);
-
-			/*TODO: Логика построения линий*/
-			//draggy snapping
-			var snapping = function (x, y, elem) {
-				if (debuggable) console.log(bendpointId);
-				var res = {};
-				res.x = x - (x % snapRange);
-				res.y = y - (y % snapRange);
-
-				scalegroup.each(function (i, children) {
-					if (Math.abs(this.x() - res.x) < 10) res.x = this.x()
-					if (Math.abs(this.y() - res.y) < 10) res.y = this.y()
-				})
-
-				edge_markers.each(function (i, children) {
-					if (bendpointId != this.attr('id')) {
-						if (Math.abs(this.x() - res.x) < 10) res.x = this.x()
-						if (Math.abs(this.y() - res.y) < 10) res.y = this.y()
-					}
-				})
-
-				return res;
-			}
-
-			x1 = x_from
-			y1 = y_from
-
-			x2 = x_from + (x_to - x_from) / 2;
-			y2 = y_from;
-
-			x3 = x2
-			y3 = y_to
-			x4 = x3
-			y4 = y3
-
-
 
 			this.data({
 				isnode: 'false',
@@ -197,379 +148,481 @@ SVG.Bpmnline = SVG.invent({
 			})
 
 
-			//new way add first pair of coords
-			var pcoords = [],
-				lcoords = [],
-				patha = this.data('path')
-
-			if (patha == '-1') {
-				if (debuggable) console.log('patha is null - ' + patha)
-				pcoords.push(['M', nodeFrom.x(), nodeFrom.y()]);
-				pcoords.push(['L', x2, y2]);
-				pcoords.push(['L', x3, y3]);
-				pcoords.push(['L', nodeTo.x(), nodeTo.y()]);
-			} else {
-				patha.split(';').forEach(function (entry) {
-					pcoords.push(entry.split(','));
-				});
-				if (debuggable) console.log('patha is NOT null ' + pcoords)
+			//TODO parent for what?
+			if (nodeFrom.data('parent') != -1) {
+				parent = nodeFrom.data('parent');
 			}
-			this.data('path', pcoords.join(';'))
-			pcoords.forEach(function (entry) {
-				lcoords.push([entry[1], entry[2]]);
+			if (nodeTo.data('parent') != -1 && nodeTo.data('parent') != parent) {
+				parent += ',' + nodeTo.data('parent');
+			}
+			if (debuggable) console.log('parents for line is ' + parent);
+
+			
+			//draggy snapping
+			var snapping = function (x, y, elem) { //TODO move to modeler.js
+				if (debuggable) console.log(bendpointId);
+				var res = {};
+				res.x = x - (x % snapRange);
+				res.y = y - (y % snapRange);
+
+				scalegroup.each(function (i, children) {//TODO change to parent or doc
+					if (Math.abs(this.x() - res.x) < 10) res.x = this.x()
+					if (Math.abs(this.y() - res.y) < 10) res.y = this.y()
+				})
+
+				bendPoints.each(function (i, children) {
+					if (bendpointId != this.attr('id')) {
+						if (Math.abs(this.x() - res.x) < 10) res.x = this.x()
+						if (Math.abs(this.y() - res.y) < 10) res.y = this.y()
+					}
+				})
+				return res;
+			}
+
+			//new way add first pair of coords
+			var pathCoordArr = [],
+				lineCoordArr = [],
+				pathData = this.data('path') //TODO: likely to remove
+
+			/*TODO: Логика построения линий*/
+			//new way
+			/*,	nodeFrom = SVG.get(prop.fromid)
+			  , nodeTo = SVG.get(prop.toid)
+			  , x_from = nodeFrom.x()
+			  , y_from = nodeFrom.y()
+			  , x_to = nodeTo.x()
+			  , y_to = nodeTo.y()
+			  , x2, y2, x3, y3, x4, y4*/
+
+			if (this.data('path') == '-1') {
+				//if (debuggable)
+				console.log('this.data("path") is null: ' + this.data('path'))
+				
+				if (nodeFrom.x() == nodeTo.x()) { // If on the same line
+					pathCoordArr.push(['M', nodeFrom.x(), nodeFrom.y()]);
+					pathCoordArr.push(['L', nodeTo.x(), nodeTo.y()]);
+				} else if (nodeFrom.y() == nodeTo.y()) { // If on the same line
+					pathCoordArr.push(['M', nodeFrom.x(), nodeFrom.y()]);
+					pathCoordArr.push(['L', nodeTo.x(), nodeTo.y()]);
+				} else {
+					pathCoordArr.push(['M', nodeFrom.x(), nodeFrom.y()]);
+					pathCoordArr.push(['L', nodeFrom.x() + (nodeTo.x() - nodeFrom.x()) / 2, nodeFrom.y()]);
+					pathCoordArr.push(['L', nodeFrom.x() + (nodeTo.x() - nodeFrom.x()) / 2, nodeTo.y()]);
+					pathCoordArr.push(['L', nodeTo.x(), nodeTo.y()]);
+				}
+			} else {
+				this.data('path').split(';').forEach(function (entry) {
+					pathCoordArr.push(entry.split(','));
+				});
+				//if (debuggable)
+				console.log('this.data("path") is NOT null ' + pathCoordArr)
+			}
+			
+
+			this.data('path', pathCoordArr.join(';'))
+			pathCoordArr.forEach(function (entry) {
+				lineCoordArr.push([entry[1], entry[2]]);
 			});
 
-			var connection = this.group(),
-				edge_markers = this.group().hide(),
-				linep,
-				linen;
+			var connection = this.group() //Group for path elements that make whole connection
+			  , bendPoints = this.group().hide() //Group for storing bendpoints
+			  , linep
+			  , linen
+			  , path1 = this.path().fill('none').stroke({ color: 'red', width: 1, opacity: 0 })
+			  ,	path2 = this.path().fill('none').stroke({ color: 'blue', width: 1, opacity: 0 })
+			  , circ_marker = this.circle(10).attr({ fill: 'red', stroke: "#000", "stroke-width": 2 }).hide()
+			  , bendpoint = this.group().attr('cursor', 'pointer').hide()
+			  , paths = [] //Array for storing connectionPieces
+			
+			//We will reuse that
+			bendpoint.circle(20).attr({ fill: 'darkmagenta', opacity: 0.5 }).move(-10, -10)
+			bendpoint.circle(10).attr({ fill: 'orange', stroke: "#000", "stroke-width": 1 }).move(-5, -5)
 
-			var path1 = this.path().fill('none').stroke({ color: 'red', width: 1, opacity: 0 }),
-				path2 = this.path().fill('none').stroke({ color: 'blue', width: 1, opacity: 0 });
-			var circ_marker = this.circle(10)
-				.attr({ fill: 'red', stroke: "#000", "stroke-width": 2 })
-				.hide()
-
-			var bendpoint = this.group().attr('cursor', 'pointer').hide()
-			bendpoint.add(this.circle(20).attr({ fill: 'darkmagenta', opacity: 0.5 }).move(-10, -10))
-			bendpoint.add(this.circle(10).attr({ fill: 'orange', stroke: "#000", "stroke-width": 1 }).move(-5, -5))
-
-			var paths = []
-
-			for (var i = 0; i < pcoords.length - 1; i++) {
-				//if (debuggable) console.log('pcoords[i]=' + pcoords[i] + ' pcoords[i+1]=' + pcoords[i+1]);
-
-				var xfrom = pcoords[i][1],
-					yfrom = pcoords[i][2],
-					xto = pcoords[i + 1][1],
-					yto = pcoords[i + 1][2]
-
-				var pth = this.path([['M', xfrom, yfrom], ['L', xto, yto]])
-
+			/*pathCoordArr.forEach(function (entry, i) {
 				if (i == 0) {
-					var deltaX = xto - xfrom;
-					var deltaY = yto - yfrom;
-					var rad = Math.atan2(deltaY, deltaX); // In radians
-					var deg = rad * (180 / Math.PI)
+					lineCoordArr[0] = getRightCoords(nodeFrom,nodeTo,false)
+					console.log('lineCoordArr[0]=' + lineCoordArr[0])
 
-					if (nodeFrom.data('type') == 'circle') {
-						xfrom = nodeFrom.x() + (25 * Math.cos(rad))
-						yfrom = nodeFrom.y() + (25 * Math.sin(rad))
-					}
-					else if (nodeFrom.data('type') == 'task') {
-						var deg = rad * (180 / Math.PI) * (-1)
-						var testobj = { width: 100, height: 80 };
-						var testcoords = edgeOfView(testobj, deg)
-						xfrom = nodeFrom.x() + testcoords.x - 50
-						yfrom = nodeFrom.y() + testcoords.y - 40
-					}
-					else if (nodeFrom.data('type') == 'decision') {
-						var deg = rad * (180 / Math.PI) * (-1)
-						if (deg <= 135 && deg >= 45) {
-							xfrom = nodeFrom.x()
-							yfrom = nodeFrom.y() - 35
-						} else if (deg >= -135 && deg <= -45) {
-							xfrom = nodeFrom.x()
-							yfrom = nodeFrom.y() + 35
-						} else if (deg < 45 && deg > -45) {
-							xfrom = nodeFrom.x() + 35
-							yfrom = nodeFrom.y()
-						} else {
-							xfrom = nodeFrom.x() - 35
-							yfrom = nodeFrom.y()
-						}
-					}
-
-					lcoords[0][0] = xfrom
-					lcoords[0][1] = yfrom
-
-				} else if (i == pcoords.length - 2) {
-					pth.marker('end', marker)
-
-					var deltaX = xfrom - xto;
-					var deltaY = yfrom - yto;
-					var rad = Math.atan2(deltaY, deltaX); // In radians
-
-					//if (debuggable) console.log('deltaX=' + deltaX + ' deltaY=' + deltaY + ' rad=' + rad + ' deg=' + deg);
-
-					if (nodeTo.data('type') == 'circle') {
-						xto = nodeTo.x() + (25 * Math.cos(rad))
-						yto = nodeTo.y() + (25 * Math.sin(rad))
-					}
-					else if (nodeTo.data('type') == 'task') {
-						var deg = rad * (180 / Math.PI) * (-1)
-						var testobj = { width: 100, height: 80 };
-						var testcoords = edgeOfView(testobj, deg)
-						xto = nodeTo.x() + testcoords.x - 50
-						yto = nodeTo.y() + testcoords.y - 40
-					}
-					else if (nodeTo.data('type') == 'decision') {
-						var deg = rad * (180 / Math.PI) * (-1)
-						if (deg <= 135 && deg >= 45) {
-							xto = nodeTo.x()
-							yto = nodeTo.y() - 35
-						} else if (deg >= -135 && deg <= -45) {
-							xto = nodeTo.x()
-							yto = nodeTo.y() + 35
-						} else if (deg < 45 && deg > -45) {
-							xto = nodeTo.x() + 35
-							yto = nodeTo.y()
-						} else {
-							xto = nodeTo.x() - 35
-							yto = nodeTo.y()
-						}
-					}
-
-					lcoords[lcoords.length - 1][0] = xto
-					lcoords[lcoords.length - 1][1] = yto
+				} else if (i == pathCoordArr.length - 1) {
+					connectionPiece.marker('end', marker)
+					lineCoordArr[lineCoordArr.length - 1] = getRightCoords(nodeFrom,nodeTo,true)
+					console.log('lineCoordArr[last]=' + lineCoordArr[lineCoordArr.length - 1])
 				}
+			})*/
 
-				//var pth = svg.path([['M',pcoords[i][1],pcoords[i][2]],['L',pcoords[i+1][1],pcoords[i+1][2]]])
-				pth.plot([['M', xfrom, yfrom], ['L', xto, yto]])
+			//If nodes are on same line
+			if (pathCoordArr.length == 2) {
+				lineCoordArr[0] = getRightCoords(nodeFrom,nodeTo)
+				lineCoordArr[lineCoordArr.length - 1] = getRightCoords(nodeTo, nodeFrom)
+
+				var connectionPiece = connection.path([['M', lineCoordArr[0][0], lineCoordArr[0][1]],
+									  ['L', lineCoordArr[lineCoordArr.length - 1][0], lineCoordArr[lineCoordArr.length - 1][1]]])
 					.fill('none')
 					.stroke({ color: 'black', width: 1/*, opacity: 0.5*/ })
 					.data({
 						iter: i,
-						from: xfrom + ',' + yfrom,
-						to: xto + ',' + yto
+						from: lineCoordArr[0][0] + ',' + lineCoordArr[0][1],
+						to: lineCoordArr[lineCoordArr.length - 1][0] + ',' + lineCoordArr[lineCoordArr.length - 1][1]
 					})
+					.marker('end', marker)
+				
+				paths.push(connectionPiece.attr('id'))
+			
+				
+			} else {
 
-				connection.add(pth)
+			
+				for (var i = 0; i < pathCoordArr.length; i++) {
+					//if (debuggable) console.log('pathCoordArr[i]=' + pathCoordArr[i] + ' pathCoordArr[i+1]=' + pathCoordArr[i+1]);
 
-				paths.push(pth.attr('id'))
-				if (i > 1) paths.splice(0, 1)
+					var xfrom,
+						yfrom,
+						xto,
+						yto
 
-				edge_markers.add(bendpoint.clone()
-					.data({
-						iter: i,
-						sidep: i == 0 ? 'none' : pcoords[i - 1][1] + ',' + pcoords[i - 1][2],
-						siden: pcoords[i + 1][1] + ',' + pcoords[i + 1][2],
-						paths: paths.join()
-					})
-					.move(pcoords[i][1], pcoords[i][2])
-					.show()
-					.draggy(snapping)
-					//.on('mousemove', function(e) { circ_marker.hide(); })
-					.on('mouseover', function (e) {
-						if (debuggable) console.log('bendpoint mouseover')
-						edge_markers.show()
-					})
-					.on('dragstart', function (e) {
-						if (debuggable) console.log('dragstart ' + e.detail.event)
-						bendpointId = this.attr('id')
-						svg.off('mousedown', paning)
-						//hide paths
-						this.data('paths').split(',').forEach(function (entry) {
-							SVG.get(entry).remove()
-						});
-						//console.log('dragstart ' + event.detail.event.x + ' ' + event.detail.event.y + ' ' + this.data('siden'));
-						polyline_backgrnd.hide()
+					var connectionPiece = connection.path([['M', 0, 0], ['L', 0, 0]])
 
-						var thistransf = this.transform(),
-							scgtransf = scalegroup.transform()
-						//var xx = (e.detail.event.pageX - scalegroup.x())/actualZoom
-						//var yy = (e.detail.event.pageY - scalegroup.y())/actualZoom
-						var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
-						var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
+					if (i == 0) {
+						var testCoords = getRightCoords(nodeFrom,nodeTo,false);
 
-						var sidep = this.data('sidep').split(',')
-						var siden = this.data('siden').split(',')
+						/*xfrom = pathCoordArr[i][1],
+						yfrom = pathCoordArr[i][2],
+						xto = pathCoordArr[i + 1][1],
+						yto = pathCoordArr[i + 1][2]*/
 
-						prevx = sidep[0] * scgtransf.scaleX + scgtransf.x
-						prevy = sidep[1] * scgtransf.scaleY + scgtransf.y
-
-						nextx = siden[0] * scgtransf.scaleX + scgtransf.x
-						nexty = siden[1] * scgtransf.scaleY + scgtransf.y
-
-						if (this.data('sidep') == 'none') {
-							linen = svg.line(xx + ',' + yy + ' ' + nextx + ',' + nexty).stroke({ width: 1 })//.back()
+						/*var deltaX = xto - xfrom;
+						var deltaY = yto - yfrom;
+						var rad = Math.atan2(deltaY, deltaX); // In radians
+						var deg = rad * (180 / Math.PI)
+						console.log('deltaX=' + deltaX + ' deltaY=' + deltaY + ' rad=' + rad + ' deg=' + deg);
+						if (nodeFrom.data('type') == 'event') {
+							xfrom = nodeFrom.x() + (25 * Math.cos(rad))
+							yfrom = nodeFrom.y() + (25 * Math.sin(rad))
 						}
-						else {
-							linep = svg.line(xx + ',' + yy + ' ' + prevx + ',' + prevy).stroke({ width: 1 })//.back()
-							linen = svg.line(xx + ',' + yy + ' ' + nextx + ',' + nexty).stroke({ width: 1 })//.back()
+						else if (nodeFrom.data('type') == 'task') {
+							var deg = rad * (180 / Math.PI) * (-1)
+							var testobj = { width: 100, height: 80 };
+							var testcoords = edgeOfView(testobj, deg)
+							xfrom = nodeFrom.x() + testcoords.x - 50
+							yfrom = nodeFrom.y() + testcoords.y - 40
 						}
-					})
-					.on('dragmove', function (e) {
-						var thistransf = this.transform(),
-							scgtransf = scalegroup.transform()
-						//var xx = (e.detail.event.pageX - scalegroup.x())/actualZoom
-						//var yy = (e.detail.event.pageY - scalegroup.y())/actualZoom
-						var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
-						var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
-
-						if (this.data('sidep') == 'none') {
-							linen.plot(xx + ',' + yy + ' ' + nextx + ',' + nexty)
-						}
-						else {
-							linep.plot(xx + ',' + yy + ' ' + prevx + ',' + prevy)
-							linen.plot(xx + ',' + yy + ' ' + nextx + ',' + nexty)
-						}
-					})
-					.on('dragend', function (e) {
-						svg.on('mousedown', paning)
-						
-
-
-						if (linep) linep.remove();
-						linen.remove();
-						var t = this.ctm().extract()
-
-						//console.log('dragend for i=' + this.data('iter') + ' x=' + t.x + ' y=' + t.y)
-						//(bbox.x + thistransf.x) * scgtransf.scaleX + scgtransf.x
-						var thistransf = this.transform(),
-							scgtransf = scalegroup.transform()
-						//var xx = (e.detail.event.pageX - scalegroup.x())/actualZoom
-						//var yy = (e.detail.event.pageY - scalegroup.y())/actualZoom
-						var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
-						var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
-
-						this.hide();
-						/*var circle = svg.circle(10).attr({ fill: 'red' }).move(xx-2.5, yy-2.5)
-					circle.animate(2500).attr({ opacity: 0})*/
-
-						if (this.data('sidep') == 'none') {
-							linen.plot(xx + ',' + yy + ' ' + nextx + ',' + nexty)
-						}
-						else {
-							linep.plot(xx + ',' + yy + ' ' + prevx + ',' + prevy)
-							linen.plot(xx + ',' + yy + ' ' + nextx + ',' + nexty)
-						}
-
-						pcoords[this.data('iter')][1] = thistransf.x
-						pcoords[this.data('iter')][2] = thistransf.y
-
-						var iter = this.data('iter')
-						edge_markers.each(function (i, children) {
-							if (this.data('iter') == iter + 1) {
-								//console.log('edge_marker with i=' + this.data('iter') + ' is next node')
-								this.data('sidep', thistransf.x + ',' + thistransf.y)
-							}
-							if (this.data('iter') == iter - 1) {
-								//console.log('edge_marker with i=' + this.data('iter') + ' is prev node')
-								this.data('siden', thistransf.x + ',' + thistransf.y)
-							}
-						})
-						/*pcoords.forEach(function(entry) {
-							console.log('entry ' + entry )
-						});*/
-						circ_marker.hide()
-
-						//check for several abreast
-						for (var i = 1; i < pcoords.length - 1; i++) {
-							if (pcoords[i][1] == pcoords[i - 1][1] && pcoords[i][1] == pcoords[i + 1][1]) {
-								//console.log('bendpoint with x=' + pcoords[i][1] + ' y=' + pcoords[i][2] + ' should be deleted')
-								pcoords.splice(i, 1)
-							} else if (pcoords[i][2] == pcoords[i - 1][2] && pcoords[i][2] == pcoords[i + 1][2]) {
-								//console.log('bendpoint with x=' + pcoords[i][1] + ' y=' + pcoords[i][2] + ' should be deleted')
-								pcoords.splice(i, 1)
+						else if (nodeFrom.data('type') == 'decision') {
+							var deg = rad * (180 / Math.PI) * (-1)
+							if (deg <= 135 && deg >= 45) {
+								xfrom = nodeFrom.x()
+								yfrom = nodeFrom.y() - 35
+							} else if (deg >= -135 && deg <= -45) {
+								xfrom = nodeFrom.x()
+								yfrom = nodeFrom.y() + 35
+							} else if (deg < 45 && deg > -45) {
+								xfrom = nodeFrom.x() + 35
+								yfrom = nodeFrom.y()
+							} else {
+								xfrom = nodeFrom.x() - 35
+								yfrom = nodeFrom.y()
 							}
 						}
-						linep.remove()
-						linen.remove()
-						element.data('path', pcoords.join(';')).update()
+
+						lineCoordArr[0][0] = xfrom
+						lineCoordArr[0][1] = yfrom*/
+						lineCoordArr[0] = testCoords
+						console.log('lineCoordArr[0]=' + lineCoordArr[0])
+
+					} else /*if (i == pathCoordArr.length - 1)*/ {
+						connectionPiece.marker('end', marker)
+						var testCoords = getRightCoords(nodeFrom,nodeTo,true);
 
 
-					})
-					/*.click(function(e) {
-						   console.log('dblclick ')
-							this.remove();
+						/*var deltaX = xfrom - xto;
+						var deltaY = yfrom - yto;
+						var rad = Math.atan2(deltaY, deltaX); // In radians
 
+						//if (debuggable) console.log('deltaX=' + deltaX + ' deltaY=' + deltaY + ' rad=' + rad + ' deg=' + deg);
 
-							pcoords[this.data('iter')][1] = t.x  * t.scaleX
-							pcoords[this.data('iter')][2] = t.y  * t.scaleY
+						if (nodeTo.data('type') == 'event') {
+							xto = nodeTo.x() + (25 * Math.cos(rad))
+							yto = nodeTo.y() + (25 * Math.sin(rad))
+						}
+						else if (nodeTo.data('type') == 'task') {
+							var deg = rad * (180 / Math.PI) * (-1)
+							var testobj = { width: 100, height: 80 };
+							var testcoords = edgeOfView(testobj, deg)
+							xto = nodeTo.x() + testcoords.x - 50
+							yto = nodeTo.y() + testcoords.y - 40
+						}
+						else if (nodeTo.data('type') == 'decision') {
+							var deg = rad * (180 / Math.PI) * (-1)
+							if (deg <= 135 && deg >= 45) {
+								xto = nodeTo.x()
+								yto = nodeTo.y() - 35
+							} else if (deg >= -135 && deg <= -45) {
+								xto = nodeTo.x()
+								yto = nodeTo.y() + 35
+							} else if (deg < 45 && deg > -45) {
+								xto = nodeTo.x() + 35
+								yto = nodeTo.y()
+							} else {
+								xto = nodeTo.x() - 35
+								yto = nodeTo.y()
+							}
+						}
 
-							var iter = this.data('iter')
-							edge_markers.each(function(i, children) {
-								if (this.data('iter') == iter+1) {
-									//console.log('edge_marker with i=' + this.data('iter') + ' is next node')
-									this.data('sidep', t.x + ',' + t.y)
-								}
-								if (this.data('iter') == iter-1) {
-									//console.log('edge_marker with i=' + this.data('iter') + ' is prev node')
-									this.data('siden', t.x + ',' + t.y)
-								}
-							})
-
-							circ_marker.hide()
-							element.data('path', pcoords.join(';')).update()
-
-					   })*/
-				)
-
-				if (i == (pcoords.length - 2)) {
-					edge_markers.add(bendpoint.clone()
+						lineCoordArr[lineCoordArr.length - 1][0] = xto
+						lineCoordArr[lineCoordArr.length - 1][1] = yto
+						*/
+						lineCoordArr[lineCoordArr.length - 1] = testCoords
+						console.log('lineCoordArr[last]=' + lineCoordArr[lineCoordArr.length - 1])
+					}
+					
+					
+					//var connectionPiece = svg.path([['M',pathCoordArr[i][1],pathCoordArr[i][2]],['L',pathCoordArr[i+1][1],pathCoordArr[i+1][2]]])
+					connectionPiece.plot([['M', lineCoordArr[0][0], lineCoordArr[0][1]],
+										['L', lineCoordArr[lineCoordArr.length - 1][0], lineCoordArr[lineCoordArr.length - 1][1]]])
+						.fill('none')
+						.stroke({ color: 'black', width: 1/*, opacity: 0.5*/ })
 						.data({
-							iter: i + 1,
-							sidep: pcoords[i][1] + ',' + pcoords[i][2],
-							siden: 'none',
-							paths: paths.splice(-1, 1).join()
+							iter: i,
+							from: lineCoordArr[0][0] + ',' + lineCoordArr[0][1],
+							to: xto + ',' + yto
 						})
-						.move(pcoords[i + 1][1], pcoords[i + 1][2])
-						.show()
-						.draggy(snapping)
-						.on('mousemove', function (e) { circ_marker.hide(); })
-						.on('dragstart', function (e) {
-							svg.off('mousedown', paning)
-							//hide paths
-							this.data('paths').split(',').forEach(function (entry) {
-								SVG.get(entry).remove()
-							});
-							//console.log('dragstart ' + event.detail.event.x + ' ' + event.detail.event.y + ' ' + this.data('siden'));
-							linep = element.line(event.detail.event.x + ',' + event.detail.event.y + ' ' + this.data('sidep')).stroke({ width: 1 });
-						})
-						.on('dragmove', function (e) {
-							linep.plot(event.detail.event.x + ',' + event.detail.event.y + ' ' + this.data('sidep'));
-						})
-						.on('dragend', function (e) {
-							linep.remove();
 
-							var t = this.ctm().extract()
+					//connection.add(connectionPiece)
 
-							//console.log('dragend for i=' + this.data('iter') + ' x=' + t.x + ' y=' + t.y)
-							pcoords[this.data('iter')][1] = t.x
-							pcoords[this.data('iter')][2] = t.y
+					paths.push(connectionPiece.attr('id'))
+					if (i > 1) paths.splice(0, 1)
 
-							var iter = this.data('iter')
-							edge_markers.each(function (i, children) {
-								/*if (this.data('iter') == iter+1) {
-									//console.log('edge_marker with i=' + this.data('iter') + ' is next node')
-									this.data('sidep', t.x + ',' + t.y)
-								}*/
-								if (this.data('iter') == iter - 1) {
-									//console.log('edge_marker with i=' + this.data('iter') + ' is prev node')
-									this.data('siden', t.x + ',' + t.y)
-								}
-							})
-							element.data('path', pcoords.join(';')).update()
-							//element.data('path', pcoords)
-							//element.update()
-						})
-					)
-					/*edge_markers.add(circ_marker.clone()
-											.attr({ fill: 'purple', stroke: "#000", "stroke-width": 2 })
-											.move(pcoords[i+1][1]-5,pcoords[i+1][2]-5)
-										.show()
-										.draggy(snapping)
-										.on('dragstart', function(e) {
-												   $('.graph').off('mousedown')
-												   svg.off('mousedown', paning)
-												   console.log('dragstart');
-											 })
-										//.on('click', function() {  console.log('click' + this.attr('id')) })
-									)*/
+					// bendPoints.add(bendpoint.clone()
+					// 	.data({
+					// 		iter: i,
+					// 		sidep: i == 0 ? 'none' : pathCoordArr[i - 1][1] + ',' + pathCoordArr[i - 1][2],
+					// 		siden: pathCoordArr[i + 1][1] + ',' + pathCoordArr[i + 1][2],
+					// 		paths: paths.join()
+					// 	})
+					// 	.move(pathCoordArr[i][1], pathCoordArr[i][2])
+					// 	.show()
+					// 	.draggy(snapping)
+					// 	//.on('mousemove', function(e) { circ_marker.hide(); })
+					// 	.on('mouseover', function (e) {
+					// 		if (debuggable) console.log('bendpoint mouseover')
+					// 		bendPoints.show()
+					// 	})
+					// 	.on('dragstart', function (e) {
+					// 		if (debuggable) console.log('dragstart ' + e.detail.event)
+					// 		bendpointId = this.attr('id')
+					// 		svg.off('mousedown', paning)
+					// 		//hide paths
+					// 		this.data('paths').split(',').forEach(function (entry) {
+					// 			SVG.get(entry).remove()
+					// 		});
+					// 		//console.log('dragstart ' + event.detail.event.x + ' ' + event.detail.event.y + ' ' + this.data('siden'));
+					// 		polyline_backgrnd.hide()
+
+					// 		var thistransf = this.transform(),
+					// 			scgtransf = scalegroup.transform()
+					// 		//var xx = (e.detail.event.pageX - scalegroup.x())/actualZoom
+					// 		//var yy = (e.detail.event.pageY - scalegroup.y())/actualZoom
+					// 		var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
+					// 		var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
+
+					// 		var sidep = this.data('sidep').split(',')
+					// 		var siden = this.data('siden').split(',')
+
+					// 		prevx = sidep[0] * scgtransf.scaleX + scgtransf.x
+					// 		prevy = sidep[1] * scgtransf.scaleY + scgtransf.y
+
+					// 		nextx = siden[0] * scgtransf.scaleX + scgtransf.x
+					// 		nexty = siden[1] * scgtransf.scaleY + scgtransf.y
+
+					// 		if (this.data('sidep') == 'none') {
+					// 			linen = svg.line(xx + ',' + yy + ' ' + nextx + ',' + nexty).stroke({ width: 1 })//.back()
+					// 		}
+					// 		else {
+					// 			linep = svg.line(xx + ',' + yy + ' ' + prevx + ',' + prevy).stroke({ width: 1 })//.back()
+					// 			linen = svg.line(xx + ',' + yy + ' ' + nextx + ',' + nexty).stroke({ width: 1 })//.back()
+					// 		}
+					// 	})
+					// 	.on('dragmove', function (e) {
+					// 		var thistransf = this.transform(),
+					// 			scgtransf = scalegroup.transform()
+					// 		//var xx = (e.detail.event.pageX - scalegroup.x())/actualZoom
+					// 		//var yy = (e.detail.event.pageY - scalegroup.y())/actualZoom
+					// 		var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
+					// 		var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
+
+					// 		if (this.data('sidep') == 'none') {
+					// 			linen.plot(xx + ',' + yy + ' ' + nextx + ',' + nexty)
+					// 		}
+					// 		else {
+					// 			linep.plot(xx + ',' + yy + ' ' + prevx + ',' + prevy)
+					// 			linen.plot(xx + ',' + yy + ' ' + nextx + ',' + nexty)
+					// 		}
+					// 	})
+					// 	.on('dragend', function (e) {
+					// 		svg.on('mousedown', paning)
+							
+
+
+					// 		if (linep) linep.remove();
+					// 		linen.remove();
+					// 		var t = this.ctm().extract()
+
+					// 		//console.log('dragend for i=' + this.data('iter') + ' x=' + t.x + ' y=' + t.y)
+					// 		//(bbox.x + thistransf.x) * scgtransf.scaleX + scgtransf.x
+					// 		var thistransf = this.transform(),
+					// 			scgtransf = scalegroup.transform()
+					// 		//var xx = (e.detail.event.pageX - scalegroup.x())/actualZoom
+					// 		//var yy = (e.detail.event.pageY - scalegroup.y())/actualZoom
+					// 		var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
+					// 		var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
+
+					// 		this.hide();
+					// 		/*var circle = svg.circle(10).attr({ fill: 'red' }).move(xx-2.5, yy-2.5)
+					// 	circle.animate(2500).attr({ opacity: 0})*/
+
+					// 		if (this.data('sidep') == 'none') {
+					// 			linen.plot(xx + ',' + yy + ' ' + nextx + ',' + nexty)
+					// 		}
+					// 		else {
+					// 			linep.plot(xx + ',' + yy + ' ' + prevx + ',' + prevy)
+					// 			linen.plot(xx + ',' + yy + ' ' + nextx + ',' + nexty)
+					// 		}
+
+					// 		pathCoordArr[this.data('iter')][1] = thistransf.x
+					// 		pathCoordArr[this.data('iter')][2] = thistransf.y
+
+					// 		var iter = this.data('iter')
+					// 		bendPoints.each(function (i, children) {
+					// 			if (this.data('iter') == iter + 1) {
+					// 				//console.log('edge_marker with i=' + this.data('iter') + ' is next node')
+					// 				this.data('sidep', thistransf.x + ',' + thistransf.y)
+					// 			}
+					// 			if (this.data('iter') == iter - 1) {
+					// 				//console.log('edge_marker with i=' + this.data('iter') + ' is prev node')
+					// 				this.data('siden', thistransf.x + ',' + thistransf.y)
+					// 			}
+					// 		})
+					// 		/*pathCoordArr.forEach(function(entry) {
+					// 			console.log('entry ' + entry )
+					// 		});*/
+					// 		circ_marker.hide()
+
+					// 		//check for several abreast
+					// 		for (var i = 1; i < pathCoordArr.length - 1; i++) {
+					// 			if (pathCoordArr[i][1] == pathCoordArr[i - 1][1] && pathCoordArr[i][1] == pathCoordArr[i + 1][1]) {
+					// 				//console.log('bendpoint with x=' + pathCoordArr[i][1] + ' y=' + pathCoordArr[i][2] + ' should be deleted')
+					// 				pathCoordArr.splice(i, 1)
+					// 			} else if (pathCoordArr[i][2] == pathCoordArr[i - 1][2] && pathCoordArr[i][2] == pathCoordArr[i + 1][2]) {
+					// 				//console.log('bendpoint with x=' + pathCoordArr[i][1] + ' y=' + pathCoordArr[i][2] + ' should be deleted')
+					// 				pathCoordArr.splice(i, 1)
+					// 			}
+					// 		}
+					// 		linep.remove()
+					// 		linen.remove()
+					// 		element.data('path', pathCoordArr.join(';')).update()
+
+
+					// 	})
+					// 	/*.click(function(e) {
+					// 		   console.log('dblclick ')
+					// 			this.remove();
+
+
+					// 			pathCoordArr[this.data('iter')][1] = t.x  * t.scaleX
+					// 			pathCoordArr[this.data('iter')][2] = t.y  * t.scaleY
+
+					// 			var iter = this.data('iter')
+					// 			bendPoints.each(function(i, children) {
+					// 				if (this.data('iter') == iter+1) {
+					// 					//console.log('edge_marker with i=' + this.data('iter') + ' is next node')
+					// 					this.data('sidep', t.x + ',' + t.y)
+					// 				}
+					// 				if (this.data('iter') == iter-1) {
+					// 					//console.log('edge_marker with i=' + this.data('iter') + ' is prev node')
+					// 					this.data('siden', t.x + ',' + t.y)
+					// 				}
+					// 			})
+
+					// 			circ_marker.hide()
+					// 			element.data('path', pathCoordArr.join(';')).update()
+
+					// 	   })*/
+					// )
+
+					// if (i == (pathCoordArr.length - 2)) {
+					// 	bendPoints.add(bendpoint.clone()
+					// 		.data({
+					// 			iter: i + 1,
+					// 			sidep: pathCoordArr[i][1] + ',' + pathCoordArr[i][2],
+					// 			siden: 'none',
+					// 			paths: paths.splice(-1, 1).join()
+					// 		})
+					// 		.move(pathCoordArr[i + 1][1], pathCoordArr[i + 1][2])
+					// 		.show()
+					// 		.draggy(snapping)
+					// 		.on('mousemove', function (e) { circ_marker.hide(); })
+					// 		.on('dragstart', function (e) {
+					// 			svg.off('mousedown', paning)
+					// 			//hide paths
+					// 			this.data('paths').split(',').forEach(function (entry) {
+					// 				SVG.get(entry).remove()
+					// 			});
+					// 			//console.log('dragstart ' + event.detail.event.x + ' ' + event.detail.event.y + ' ' + this.data('siden'));
+					// 			linep = element.line(event.detail.event.x + ',' + event.detail.event.y + ' ' + this.data('sidep')).stroke({ width: 1 });
+					// 		})
+					// 		.on('dragmove', function (e) {
+					// 			linep.plot(event.detail.event.x + ',' + event.detail.event.y + ' ' + this.data('sidep'));
+					// 		})
+					// 		.on('dragend', function (e) {
+					// 			linep.remove();
+
+					// 			var t = this.ctm().extract()
+
+					// 			//console.log('dragend for i=' + this.data('iter') + ' x=' + t.x + ' y=' + t.y)
+					// 			pathCoordArr[this.data('iter')][1] = t.x
+					// 			pathCoordArr[this.data('iter')][2] = t.y
+
+					// 			var iter = this.data('iter')
+					// 			bendPoints.each(function (i, children) {
+					// 				/*if (this.data('iter') == iter+1) {
+					// 					//console.log('edge_marker with i=' + this.data('iter') + ' is next node')
+					// 					this.data('sidep', t.x + ',' + t.y)
+					// 				}*/
+					// 				if (this.data('iter') == iter - 1) {
+					// 					//console.log('edge_marker with i=' + this.data('iter') + ' is prev node')
+					// 					this.data('siden', t.x + ',' + t.y)
+					// 				}
+					// 			})
+					// 			element.data('path', pathCoordArr.join(';')).update()
+					// 			//element.data('path', pathCoordArr)
+					// 			//element.update()
+					// 		})
+					// 	)
+					// 	/*bendPoints.add(circ_marker.clone()
+					// 							.attr({ fill: 'purple', stroke: "#000", "stroke-width": 2 })
+					// 							.move(pathCoordArr[i+1][1]-5,pathCoordArr[i+1][2]-5)
+					// 						.show()
+					// 						.draggy(snapping)
+					// 						.on('dragstart', function(e) {
+					// 								   $('.graph').off('mousedown')
+					// 								   svg.off('mousedown', paning)
+					// 								   console.log('dragstart');
+					// 							 })
+					// 						//.on('click', function() {  console.log('click' + this.attr('id')) })
+					// 					)*/
+					// }
 				}
 			}
-			var polyline_backgrnd = this.polyline(lcoords)
+			var polyline_backgrnd = this.polyline(lineCoordArr)
 				.fill('none')
 				.stroke({ color: 'white', width: 6 })
 
-			var polyline = this.polyline(lcoords)
+			var polyline = this.polyline(lineCoordArr)
 				.fill('none')
 				.stroke({ color: 'green', width: 20, opacity: 0 })
 				.on('mouseover', function (e) {
 					//console.log('polyline mouseover')
 					circ_marker.show()
-					edge_markers.show()
+					bendPoints.show()
 				})
 				.on('dblclick', function (e) {
 					if (debuggable) console.log('polyline dblclick');
@@ -757,27 +810,27 @@ SVG.Bpmnline = SVG.invent({
 
 
 						if (movedFlag/*Math.abs(xx-intx)>10 || Math.abs(yy-inty)>10*/) {
-							//console.log('before arr=' + pcoords.join());
+							//console.log('before arr=' + pathCoordArr.join());
 							var currindex = oversegment.data('iter')
 							//line to nex x & y
-							pcoords.splice(currindex + 1, 0, ['L', circ_marker.cx(), circ_marker.cy()])
-							//console.log('iter=' + oversegment.data('iter') + ' arr=' + pcoords.join());
+							pathCoordArr.splice(currindex + 1, 0, ['L', circ_marker.cx(), circ_marker.cy()])
+							//console.log('iter=' + oversegment.data('iter') + ' arr=' + pathCoordArr.join());
 							$(this).off('mouseup')
 
 							//check for several abreast
-							for (var i = 1; i < pcoords.length - 1; i++) {
-								if (pcoords[i][1] == pcoords[i - 1][1] && pcoords[i][1] == pcoords[i + 1][1]) {
-									//console.log('bendpoint with x=' + pcoords[i][1] + ' y=' + pcoords[i][2] + ' should be deleted')
-									pcoords.splice(i, 1)
-								} else if (pcoords[i][2] == pcoords[i - 1][2] && pcoords[i][2] == pcoords[i + 1][2]) {
-									//console.log('bendpoint with x=' + pcoords[i][1] + ' y=' + pcoords[i][2] + ' should be deleted')
-									pcoords.splice(i, 1)
+							for (var i = 1; i < pathCoordArr.length - 1; i++) {
+								if (pathCoordArr[i][1] == pathCoordArr[i - 1][1] && pathCoordArr[i][1] == pathCoordArr[i + 1][1]) {
+									//console.log('bendpoint with x=' + pathCoordArr[i][1] + ' y=' + pathCoordArr[i][2] + ' should be deleted')
+									pathCoordArr.splice(i, 1)
+								} else if (pathCoordArr[i][2] == pathCoordArr[i - 1][2] && pathCoordArr[i][2] == pathCoordArr[i + 1][2]) {
+									//console.log('bendpoint with x=' + pathCoordArr[i][1] + ' y=' + pathCoordArr[i][2] + ' should be deleted')
+									pathCoordArr.splice(i, 1)
 								}
 							}
 
 
 
-							element.data('path', pcoords.join(';')).update()
+							element.data('path', pathCoordArr.join(';')).update()
 						} else {
 							if (debuggable) console.log('not moved')
 							polyline.fire('realclick')
@@ -838,7 +891,7 @@ SVG.Bpmnline = SVG.invent({
 				.on('mouseout', function (e) {
 					if (debuggable) console.log('polyline mouseout')
 					if (!dragging) circ_marker.hide()
-					edge_markers.hide()
+					bendPoints.hide()
 				})
 
 
@@ -852,27 +905,27 @@ SVG.Bpmnline = SVG.invent({
 			connection/*.data('type','connection')*/.front()
 			circ_marker.front()
 			polyline.front()
-			edge_markers.data('type', 'bendpoints').front()
+			bendPoints.data('type', 'bendpoints').front()
 
 
 			connection.mouseover(function (e) {
 				if (debuggable) console.log('this.mouseover dragging=' + dragging)
-				edge_markers.show()
+				bendPoints.show()
 				//if(!dragging) circ_marker.show()
 			});
 
-			/*this.mouseout(function(e) {
-				//edge_markers.hide();
-				//console.log('this.mouseout dragging='  +dragging)
-				//if(!edge_dragging) circ_marker.hide();
+								/*this.mouseout(function(e) {
+									//bendPoints.hide();
+									//console.log('this.mouseout dragging='  +dragging)
+									//if(!edge_dragging) circ_marker.hide();
 
+								});*/
+
+			/*del.click(function (e) {
+				element.remove()
 			});*/
 
-			del.click(function (e) {
-				element.remove()
-			});
-
-			settings.click(function (e) {
+			/*settings.click(function (e) {
 				var xx = e.pageX// - $('.graph').offset().left;
 				var yy = e.pageY// - $('.graph').offset().top;
 
@@ -905,10 +958,10 @@ SVG.Bpmnline = SVG.invent({
 					}
 				});
 				e.stopPropagation();
-			});
+			});*/
 
-			edge_markers.first().remove()
-			edge_markers.last().remove()
+			//bendPoints.first().remove()
+			//bendPoints.last().remove()
 			return this
 
 		},

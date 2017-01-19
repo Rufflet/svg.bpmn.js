@@ -270,12 +270,12 @@ SVG.Bpmnnode = SVG.invent({
                     var res = {};
                     res.x = x - (x % snapRange);
                     res.y = y - (y % snapRange);
-                    // scalegroup.each(function(i, children) {
-                    //     if (element.attr('id')!=this.attr('id')) {
-                    //         if (Math.abs(this.x()-res.x)<10) res.x= this.x()
-                    //         if (Math.abs(this.y()-res.y)<10) res.y= this.y()
-                    //     }
-                    // })
+                    scalegroup.each(function(i, children) {
+                        if (element.attr('id')!=this.attr('id')) {
+                            if (Math.abs(this.x()-res.x)<10) res.x= this.x()
+                            if (Math.abs(this.y()-res.y)<10) res.y= this.y()
+                        }
+                    })
                     return res;
                 });
             }
@@ -301,7 +301,7 @@ SVG.Bpmnnode = SVG.invent({
         }
 
         this.on('click', function (e) {
-            console.log("click");
+            //console.log("click");
             if (editable) {
                 this.front()
                 shapeOuter.attr({ stroke: nodeOptions.colors.selected }).show()
@@ -318,8 +318,7 @@ SVG.Bpmnnode = SVG.invent({
                         var xx = (e.pageX - scalegroup.x()) / actualZoom,
                             yy = (e.pageY - scalegroup.y()) / actualZoom
 
-
-                        console.log('Parent is ' + element.parent('#scalegroup'))
+                        //console.log('Parent is ' + element.parent('#scalegroup'))
 
                         if (element.insideGbox(e.pageX, e.pageY)) {
                             if (debuggable) console.log("inside")
@@ -550,26 +549,6 @@ SVG.Bpmnnode = SVG.invent({
             svg.on('mousedown', paning)
             }
         })
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     }
     , inherit: SVG.G
     , extend: {
