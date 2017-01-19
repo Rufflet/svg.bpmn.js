@@ -2854,12 +2854,12 @@ if (scalable) {
 //move to modeler.js
 function paning(e) {
 	if (!isPlacing) {
-		console.log('paning')
+		//console.log('paning')
 		var stx = e.pageX
 			, sty = e.pageY
 			, mx, my
 			, moveFunc = function (e) {
-					console.log('paning mousemove')
+					//console.log('paning mousemove')
 					mx = (e.pageX - stx) / actualZoom
 					my = (e.pageY - sty) / actualZoom
 					//console.log('this ', this)
@@ -2868,7 +2868,7 @@ function paning(e) {
 					sty = e.pageY
 			}
 			,	upFunc = function (e) {
-					console.log('paning mouseup ', this)
+					//console.log('paning mouseup ', this)
 					this.style('cursor', 'default')
 					this.off('mousemove', moveFunc)
 					this.off('mouseup', upFunc)

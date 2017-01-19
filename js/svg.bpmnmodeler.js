@@ -26,7 +26,7 @@ nodeOptions.colors.activity = 100
 
 var drawLine
 function startDrawLine() {
-    console.log("startDrawLine")
+    //console.log("startDrawLine")
     drawLine = svg.line(0, 0, 0, 0).attr({ stroke: '#333333', 'stroke-width': '1', 'stroke-dasharray': '2,2' })
 }
 
@@ -46,8 +46,7 @@ function procDrawLine(e,elem) {
 }
 
 function stopDrawLine(e,elem) {
-    
-    console.log("stopDrawLine")
+    //console.log("stopDrawLine")
     //console.log(elem)
     document.removeEventListener('mousemove', procWrap, false)
     document.removeEventListener('click', stopWrap, false)
@@ -60,7 +59,8 @@ function stopDrawLine(e,elem) {
                 //if (debuggable) console.log('try to connect with ' + this.attr('id'))
 
                 if (this.data('is-node') == true && this.data('type') != 'pull') {
-                    scalegroup.add(svg.bpmnline({ fromid: elem.attr('id'), toid: this.attr('id') }))
+                    //scalegroup.add(svg.bpmnline({ fromid: elem.attr('id'), toid: this.attr('id') }))
+                    elem.parent('.viewport').bpmnline({ fromid: elem.attr('id'), toid: this.attr('id') })
                 } else {
                     //if (debuggable) console.log('data false')
                     //if (debuggable) console.log('type ' + this.data('type'))
@@ -106,6 +106,12 @@ function getIconByType(selectedType, modelId, objId) {
     }
 }
 
+function demoData(){
+    scalegroup.bpmnline({
+          fromid: scalegroup.bpmnnode({ type: 'event', subtype: 'start' }).move(150,100).attr('id')
+        , toid: scalegroup.bpmnnode({ type: 'event', subtype: 'start' }).move(600,100).attr('id')
+    })
+}
 
 //nodes floating adding
 function floatingAdd(e) {
@@ -159,4 +165,59 @@ function floatingAdd(e) {
     })
     */
 
+}
+
+
+//Корректировка координат в зависимости от угла
+function getRightCoords (nodeFrom, nodeTo) {
+    /*
+    double x1 = Point1.x, y1 = Point1.y;
+    double x2 = Point2.x, y2 = Point2.y;
+    double A = Math.Atan2(y1 - y2, x1 - x2) / Math.PI * 180;
+    */
+    var deltaX
+      , deltaY
+      , rad
+      , xto
+      , yto
+      , deg
+   
+    deltaX = nodeTo.x() - nodeFrom.x()
+    deltaY = nodeTo.y() - nodeFrom.y()
+    rad = Math.atan2(deltaY, deltaX) // In radians
+    deg = rad * (180 / Math.PI)
+    
+    //if (debuggable) console.log('deltaX=' + deltaX + ' deltaY=' + deltaY + ' rad=' + rad + ' deg=' + deg);
+
+    if (nodeFrom.data('type') == 'event') {
+        xto = nodeFrom.x() + (25 * Math.cos(rad))
+        yto = nodeFrom.y() + (25 * Math.sin(rad))
+    }
+    else if (nodeTo.data('type') == 'task') {
+        var deg = rad * (180 / Math.PI) * (-1)
+        var testobj = { width: 100, height: 80 };
+        var testcoords = edgeOfView(testobj, deg)
+        xto = nodeTo.x() + testcoords.x - 50
+        yto = nodeTo.y() + testcoords.y - 40
+    }
+    else if (nodeTo.data('type') == 'decision') {
+        var deg = rad * (180 / Math.PI) * (-1)
+        if (deg <= 135 && deg >= 45) {
+            xto = nodeTo.x()
+            yto = nodeTo.y() - 35
+        } else if (deg >= -135 && deg <= -45) {
+            xto = nodeTo.x()
+            yto = nodeTo.y() + 35
+        } else if (deg < 45 && deg > -45) {
+            xto = nodeTo.x() + 35
+            yto = nodeTo.y()
+        } else {
+            xto = nodeTo.x() - 35
+            yto = nodeTo.y()
+        }
+    }
+
+    console.log('getRightCoords ' + xto + ' ' + yto)
+    console.log('deltaX=' + deltaX + ' deltaY=' + deltaY + ' rad=' + rad + ' deg=' + deg);
+    return [xto, yto]
 }

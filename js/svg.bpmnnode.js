@@ -49,11 +49,11 @@ SVG.Bpmnnode = SVG.invent({
             , type: prop.type //likely to remove
             //, subtype: prop.subtype //likely to remove
             //, 'inner-type': prop.innertype //likely to remove
-            , 'element-id': prop.id //prop.subtype + '-' + prop.type + '-' + bpmnNodesCounter++
+            //, 'element-id': prop.id //prop.subtype + '-' + prop.type + '-' + bpmnNodesCounter++
             //, 'inner-text': prop.innertext //likely to remove
             
         })
-
+        this.attr('id', prop.id)
         if (prop.parent != -1 ) {
             this.data('parent', prop.parent)
             if (debuggable) console.log(this.data('parent'))
@@ -270,12 +270,12 @@ SVG.Bpmnnode = SVG.invent({
                     var res = {};
                     res.x = x - (x % snapRange);
                     res.y = y - (y % snapRange);
-                    // scalegroup.each(function(i, children) {
-                    //     if (element.attr('id')!=this.attr('id')) {
-                    //         if (Math.abs(this.x()-res.x)<10) res.x= this.x()
-                    //         if (Math.abs(this.y()-res.y)<10) res.y= this.y()
-                    //     }
-                    // })
+                    scalegroup.each(function(i, children) {
+                        if (element.attr('id')!=this.attr('id')) {
+                            if (Math.abs(this.x()-res.x)<10) res.x= this.x()
+                            if (Math.abs(this.y()-res.y)<10) res.y= this.y()
+                        }
+                    })
                     return res;
                 });
             }
@@ -301,7 +301,7 @@ SVG.Bpmnnode = SVG.invent({
         }
 
         this.on('click', function (e) {
-            console.log("click");
+            //console.log("click");
             if (editable) {
                 this.front()
                 shapeOuter.attr({ stroke: nodeOptions.colors.selected }).show()
@@ -318,8 +318,7 @@ SVG.Bpmnnode = SVG.invent({
                         var xx = (e.pageX - scalegroup.x()) / actualZoom,
                             yy = (e.pageY - scalegroup.y()) / actualZoom
 
-
-                        console.log('Parent is ' + element.parent('#scalegroup'))
+                        //console.log('Parent is ' + element.parent('#scalegroup'))
 
                         if (element.insideGbox(e.pageX, e.pageY)) {
                             if (debuggable) console.log("inside")
@@ -550,31 +549,12 @@ SVG.Bpmnnode = SVG.invent({
             svg.on('mousedown', paning)
             }
         })
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    },
-    inherit: SVG.G,
-    extend: {
+    }
+    , inherit: SVG.G
+    , extend: {
+        //For proper node text placing
         updateText: function (innerTextStrings) {
-            var innerText = SVG.get(this.data('element-id')+'-innertext')
+            var innerText = SVG.get(this.attr('id')+'-innertext')
             innerTextStrings = typeof innerTextStrings !== 'undefined' ? innerTextStrings.split('\n') : innerText.text().split('\n')
             innerText.text(function (add) {
                 for (i = 0; i < innerTextStrings.length; i++) {
@@ -584,8 +564,10 @@ SVG.Bpmnnode = SVG.invent({
             innerText.lines().each(function (i, children) {
                 this.dx(-this.length() / 2 + nodeOptions.sizes.event/2)
             })
-        },
-        update: function (initially) {
+
+            return this
+        }
+        /*, update: function (initially) {
             this.clear();
             var prop = {
                 fromid: this.data('idfrom'),
@@ -601,11 +583,11 @@ SVG.Bpmnnode = SVG.invent({
             if (initially) prop.path = -1
 
             return this.draw(prop);
-        }
-    },
-    construct: {
+        }*/
+    }
+    , construct: {
         bpmnnode: function( prop ) {
-            return this.put(new SVG.Bpmnnode( prop ))//.updateText() TODO: разобраться с выравниванием текста
+            return this.put(new SVG.Bpmnnode( prop )).updateText()
         }
     }
 });
