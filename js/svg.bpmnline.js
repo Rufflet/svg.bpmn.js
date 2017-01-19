@@ -250,7 +250,7 @@ SVG.Bpmnline = SVG.invent({
 				}
 			})*/
 
-			//If nodes are on same line
+			//If nodes are on same line 
 			if (pathCoordArr.length == 2) {
 				lineCoordArr[0] = getRightCoords(nodeFrom,nodeTo)
 				lineCoordArr[lineCoordArr.length - 1] = getRightCoords(nodeTo, nodeFrom)
