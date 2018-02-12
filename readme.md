@@ -1,6 +1,8 @@
 # svg.bpmn.js
 A JavaScript library for building bpmn-like flowcharts. Inspired by [bpmn.io](https://github.com/bpmn-io)
 
+![alt text](images/demo.jpg "BPMN-like flowchart demo")
+
 ## Usage
 
 This library depends on:
