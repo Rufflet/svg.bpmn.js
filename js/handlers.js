@@ -1,14 +1,6 @@
 ﻿/*
 svg 223 version
 remastered
-build 160120171014
-*/
-
-/*
-TODO:
-- перевести на объекты
-- вынести общие фукнции во внешнее окружение (м.б. сделать плагины - поиск точки на окружности, на линии и т.д.)
-
 */
 function new_window(P_URL){
  var p_height=screen.availHeight-50;
@@ -17,34 +9,6 @@ function new_window(P_URL){
  if(w.opener==null)w.opener=self;
  w.focus();
 }
-
-SVG.extend(SVG.G, {
-  insideGbox: function(x, y) {
-    var bbox = this.bbox()
-      , scgtransf = scalegroup.transform() //TODO: заменить на parent или doc
-      , thistransf = this.transform()
-      , xx = (bbox.x + thistransf.x) * scgtransf.scaleX + scgtransf.x
-      , yy = (bbox.y + thistransf.y) * scgtransf.scaleY + scgtransf.y
-      , ww = bbox.w * scgtransf.scaleX
-      , hh = bbox.h * scgtransf.scaleY
-
-    //for visualisation
-    /*console.log('bbox.x=' + bbox.x + ' bbox.y=' + bbox.y + ' bbox.w=' + bbox.w + ' bbox.h=' + bbox.h);
-    console.log('scgtransf ',  scgtransf);
-    console.log('thistransf ',  thistransf);
-    console.log('point.x=' + x + ' point.y=' + y + ' xx=' + xx + ' yy=' + yy + ' ww=' + ww + ' hh=' + hh);
-*/
-    /*var circle = svg.circle(5).attr({ fill: 'pink' }).move(x-2.5, y-2.5)
-    var brect = svg.rect(ww, hh).move(xx,yy).attr({ fill: 'none', stroke: "orange", "stroke-width": 1, "stroke-opacity"  : 0.7 })
-    circle.animate(2500).attr({ opacity: 0})
-    brect.animate(2500).stroke({ opacity: 0})*/
-
-    return x > xx
-        && y > yy
-        && x < xx + ww
-        && y < yy + hh
-  }
-})
 
 var editable = true; //flag режима редактирования
 var adminable = true; //flag режима администрирования
@@ -69,15 +33,6 @@ var markers = svg.group();
 
 var scalegroup = svg.group().attr('id', 'scalegroup').size("100%", "100%");
 
-//zero point
-var zeropoint = svg.group().attr('id', 'zeropoint');
-zeropoint.add(svg.rect(30,2).attr({ fill: '#cccccc' }).style('pointer-events:none;').move(-16, -2))
-zeropoint.add(svg.rect(3,30).attr({ fill: '#cccccc' }).style('pointer-events:none;').move(-2, -16))
-zeropoint.add(svg.plain('(0,0)').attr({ fill: '#cccccc' }).style('pointer-events:none;').addClass('noselect').move(-40, -20))
-scalegroup.add(zeropoint)
-
-
-
 //var connections = [];
 var lines = [];
 
@@ -96,10 +51,22 @@ function exportGraph() {
 }
 
 //in out points .rect(110, 90).attr({ fill: '#f5f5f5', stroke: "#cd4436", "stroke-width": 4, "stroke-opacity"  : 0.7 })
-/*var marker_top = svg.rect(20,10).attr({ fill: 'green', stroke: "#000", "stroke-width": 1 }).move(0, 0).hide(),
+var marker_top = svg.rect(20,10).attr({ fill: 'green', stroke: "#000", "stroke-width": 1 }).move(0, 0).hide(),
 	marker_bottom = svg.rect(20,10).attr({ fill: 'green', stroke: "#000", "stroke-width": 1 }).move(0, 0).hide()
+
 scalegroup.add(marker_top)
-scalegroup.add(marker_bottom)*/
+scalegroup.add(marker_bottom)
+
+SVG.extend(SVG.Nested,SVG.Shape, {
+  insideTbox: function(x, y) {
+    var tbox = this.tbox()
+
+    return x > tbox.x
+        && y > tbox.y
+        && x < tbox.x + tbox.width
+        && y < tbox.y + tbox.height
+  }
+})
 
 function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, parent) {
   /*
@@ -123,57 +90,48 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 	//set defaults if necessary
 	innertype = typeof innertype !== 'undefined' ? innertype : '';
 	innertext = typeof innertext !== 'undefined' ? innertext : '';
-	xcoor = typeof xcoor !== 'undefined' ? xcoor : (200-scalegroup.x())/actualZoom;
-	ycoor = typeof ycoor !== 'undefined' ? ycoor : (200-scalegroup.y())/actualZoom;
+	xcoor = typeof xcoor !== 'undefined' ? xcoor : (100-scalegroup.x())/actualZoom;
+	ycoor = typeof ycoor !== 'undefined' ? ycoor : (50-scalegroup.y())/actualZoom;
 	id = typeof id !== 'undefined' ? id : -1;
 	oraid = typeof oraid !== 'undefined' ? oraid : -1;
 	parent = typeof parent !== 'undefined' ? parent : -1;
 
+  var circle = svg.nested()
 
   //store all bpmnlines
   var connections = [];
 
-	var circ_focus = svg.circle(60).attr({ fill: 'none', stroke: "#cd4436", "stroke-width": 4, "stroke-opacity"  : 0.7 }).move(-30,-30).hide();
-	var circ_outer = svg.circle(60).attr({ fill: 'none', stroke: "#d9534f", "stroke-width": 2, "stroke-dasharray": 4, "stroke-opacity"  : 0.5 }).move(-30,-30).hide();
-	var circ = svg.circle(50).move(-25,-25);
-	var circ_inner = svg.circle(42).attr({ fill: '#f5f5f5', stroke: "#000", "stroke-width": 2 }).move(-21,-21);
+	var circ_focus = circle.circle(60).attr({ fill: '#f5f5f5', stroke: "#cd4436", "stroke-width": 4, "stroke-opacity"  : 0.7 }).move(-30,-30).hide();
+	var circ_outer = circle.circle(60).attr({ fill: '#f5f5f5', stroke: "#d9534f", "stroke-width": 2, "stroke-dasharray": 4, "stroke-opacity"  : 0.5 }).move(-30,-30).hide();
+	var circ = circle.circle(50).move(-25,-25);
+	var circ_inner = circle.circle(42).attr({ fill: '#f5f5f5', stroke: "#000", "stroke-width": 2 }).move(-21,-21);
 	//var connection;
 
-  //фон для меню
-  var menu_backgrnd = svg.rect(25,80)
-                         .attr({ fill: '#ececec', opacity: 0.7 })
-                         .move(26,-37)
-                         .hide()
+  var settings = circle.text("set").attr({id: circ.attr('id')+'_settings'}).font({family: 'fontello', size: 20}).plain('\ue802').hide();
 
-  var draw = svg.plain('\ue801')
-                .attr({cursor: 'pointer'})
-                .font({family: 'fontello', size: 20})
-                .move(32,-35)
-                .hide()
+	//var settings = svg.foreignObject(20,20).attr({id: circ.attr('id')+'_settings'}).hide();
+	//$('#' + circ.attr('id')+'_settings').html('<i class="icon-cog"></i>');
+	settings.attr({width: 20, height: 20, cursor: 'pointer'}).move(30,-15);
 
-  var settings = svg.plain('\ue802')
-                    .attr({cursor: 'pointer'})
-                    .font({family: 'fontello', size: 20})
-                    .move(30,-10)
-                    .hide()
+  var draw = circle.text("draw").attr({id: circ.attr('id')+'_draw'}).font({family: 'fontello', size: 20}).plain('\ue801').hide();
+	//var draw = svg.foreignObject(20,20).attr({id: circ.attr('id')+'_draw'}).hide();
+	//$('#' + circ.attr('id')+'_draw').html('<i class="icon-level-down"></i>');
+	draw.attr({width: 20, height: 20, cursor: 'pointer'}).move(30,5);
 
-  var del = svg.plain('\ue800')
-               .attr({cursor: 'pointer'})
-               .font({family: 'fontello', size: 20})
-               .move(30,15)
-               .hide()
+  var del = circle.text("del").attr({id: circ.attr('id')+'_del'}).font({family: 'fontello', size: 20}).plain('\ue800').hide();
+	//var del = svg.foreignObject(20,20).attr({id: circ.attr('id')+'_del'}).hide();
+	//$('#' + circ.attr('id')+'_del').html('<i class="icon-trash-empty"></i>');
+	del.attr({width: 20, height: 20, cursor: 'pointer'}).move(30,30);
 
-  var inner_type = svg.plain('')
-                      .font({family: 'fontello', size: 20})
-                      .addClass('noselect')
-                      .move(-9,6)
+  var inner_type = circle.text("inner_type").attr({id: circ.attr('id')+'_inner_type'});
+  //var inner_type = svg.foreignObject(20,20).attr({id: circ.attr('id')+'_inner_type'});
+	inner_type.attr({width: 20, height: 20}).move(-10,-10);
 
 	if (subtype==1) {
 		// иконка от innertype
 		switch (innertype) {
 		  case 'start_dropdown_1':
-      inner_type.plain('')
-			//$('#' + circ.attr('id')+'_inner_type').html('');
+			$('#' + circ.attr('id')+'_inner_type').html('');
 			break
 		  case 'start_dropdown_2':
 			$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-mail"></i>');
@@ -182,12 +140,10 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 			$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-clock"></i>');
 			break
 		  case 'start_dropdown_4':
-      inner_type.plain('\ue805')
-      //$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-doc-text"></i>');
+			$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-doc-text"></i>');
 			break
 		  case 'start_dropdown_5':
-      inner_type.plain('\ue807')
-			//$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-collapse"></i>');
+			$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-collapse"></i>');
 			break
 		  case 'start_dropdown_6':
 			$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-target"></i>');
@@ -196,27 +152,22 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 			$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-plus"></i>');
 			break
 		  default:
-      inner_type.plain('')
-			//$('#' + circ.attr('id')+'_inner_type').html('');
+			$('#' + circ.attr('id')+'_inner_type').html('');
 		};
 	} else if (subtype==2) {
 			// иконка от innertype
 			switch (innertype) {
 			  case 'inter_dropdown_1':
-        inner_type.plain('')
-				//$('#' + circ.attr('id')+'_inner_type').html('');
+				$('#' + circ.attr('id')+'_inner_type').html('');
 				break
 			  case 'inter_dropdown_2':
-        inner_type.plain('\ue803')
-				//$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-mail"></i>');
+				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-mail"></i>');
 				break
 			  case 'inter_dropdown_3':
-        inner_type.plain('\ue804')
-				//$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-clock"></i>');
+				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-clock"></i>');
 				break
 			  case 'inter_dropdown_4':
-        inner_type.plain('\ue814')
-				//$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-mail-alt"></i>');
+				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-mail-alt"></i>');
 				break
 			  case 'inter_dropdown_5':
 				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-doc-text"></i>');
@@ -243,15 +194,13 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-plus-outline"></i>');
 				break
 			  default:
-        inner_type.plain('')
-				//$('#' + circ.attr('id')+'_inner_type').html('');
+				$('#' + circ.attr('id')+'_inner_type').html('');
 			};
 	} else {
 			// иконка от innertype
 			switch (innertype) {
 			  case 'end_dropdown_1':
-        inner_type.plain('')
-				//$('#' + circ.attr('id')+'_inner_type').html('');
+				$('#' + circ.attr('id')+'_inner_type').html('');
 				break
 			  case 'end_dropdown_2':
 				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-mail"></i>');
@@ -269,8 +218,7 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-fast-bw"></i>');
 				break
 			  case 'end_dropdown_7':
-        inner_type.plain('\ue807')
-				//$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-collapse"></i>');
+				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-collapse"></i>');
 				break
 			  case 'end_dropdown_8':
 				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-target"></i>');
@@ -279,61 +227,42 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 				$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-circle"></i>');
 				break
 			  default:
-        inner_type.plain('')
-				//$('#' + circ.attr('id')+'_inner_type').html('');
+				$('#' + circ.attr('id')+'_inner_type').html('');
 			};
 	};
 
 
-  var inner_text = svg.text('')
-                      .style('cursor:default;')
-                      .addClass('noselect')
-                      .move(-30,25)
-                      .hide();
+  var inner_text = circle.text("inner_type").attr({id: circ.attr('id')+'_inner_text'});
+	//var inner_text = svg.foreignObject(100,50).attr({id: circ.attr('id')+'_inner_text'});
+	inner_text.attr({width: 100, height: 50}).move(-25,55).style('cursor:default; word-wrap: break-word; text-align: center;').hide();
+	//$('#' + circ.attr('id')+'_inner_text').html(innertext);
+	if (innertext!='') inner_text.show();
 
-	if (innertext!='') {
-    inner_text.show();
-    //innertext = innertext.split('\n');
-    inner_text.text(function(add) {
-      $.each(innertext.split('\n'), function(k, val){
-        add.tspan(val).newLine()
-      });
-    })
-    var linesset = inner_text.lines()
-    linesset.each(function(i, children) {
-      this.dx(-this.length()/2+25)
-    })
-  }
 
-	var circle = svg.group();
-		circle.add(circ_focus);
-		circle.add(circ_outer);
-		circle.add(circ);
-		circle.add(circ_inner);
-    circle.add(menu_backgrnd);
-		circle.add(draw);
-		circle.add(del);
-		circle.add(settings);
-		circle.add(inner_type);
-		circle.add(inner_text);
+
+	// var circle = svg.group();
+	// 	circle.add(circ_focus);
+	// 	circle.add(circ_outer);
+	// 	circle.add(circ);
+	// 	circle.add(circ_inner);
+	// 	circle.add(draw);
+	// 	circle.add(del);
+	// 	circle.add(settings);
+	// 	circle.add(inner_type);
+	// 	circle.add(inner_text);
 
 		if (!editable) {
 			circle.attr('cursor','pointer')
 		} else {
 			circle.draggy(function (x, y, elem) {
-        var res = {};
-        res.x = x - (x % snapRange);
-        res.y = y - (y % snapRange);
-        scalegroup.each(function(i, children) {
-          if (circle.attr('id')!=this.attr('id')) {
-            if (Math.abs(this.x()-res.x)<10) res.x= this.x()
-            if (Math.abs(this.y()-res.y)<10) res.y= this.y()
-          }
-        })
-        return res;
-      });
-		}
+				var res = {};
 
+				res.x = x - (x % snapRange);
+				res.y = y - (y % snapRange);
+
+				return res;
+			});
+		}
 		circle.move(xcoor,ycoor);
 
 	scalegroup.add(circle);
@@ -355,10 +284,14 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 		steps.push({ id: circle.attr('id'), type: 'circle' })
 	}
 
+
+
 	if (parent != -1 ) {
 		circle.data('parent', parent)
 		if (debuggable) console.log(circle.data('parent'))
 	}
+
+
 
 	if (editable) {
 		circle.mouseover(function() {
@@ -391,20 +324,18 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 		document.removeEventListener('mousemove', procDrawLine);
 		document.removeEventListener('click', stopDrawLine);
 
-		//var x2 = (e.pageX - scalegroup.x())/actualZoom;
-		//var y2 = (e.pageY - scalegroup.y())/actualZoom;
+		var x2 = (e.pageX - scalegroup.x())/actualZoom;
+		var y2 = (e.pageY - scalegroup.y())/actualZoom;
 
 		line.remove();
-    //if (!circle.insideGbox(x2, y2)) {
-		if (!circle.insideGbox(e.pageX, e.pageY)) {
+		if (!circle.insideTbox(x2, y2)) {
 			scalegroup.each(function(i, children) {
-        //if (this.insideGbox(x2, y2)) {
-        if (this.data('isnode')==true && this.insideGbox(e.pageX, e.pageY)) {
+				if (this.insideTbox(x2, y2)) {
 					if (debuggable)	console.log('try to connect with ' + this.attr('id'));
 
 					if (this.data('isnode')==true && this.data('type')!='pull') {
 						//drawPolyline(circle.attr('id'), this.attr('id'));
-            scalegroup.add( svg.bpmnline( { fromid: circle.attr('id'), toid: this.attr('id') } ) );
+            scalegroup.add( svg.bpmnline(circle.attr('id'), this.attr('id')) );
 					} else {
 						if (debuggable) console.log('data false');
 						if (debuggable) console.log('type ' + this.data('type'));
@@ -429,11 +360,7 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 		//if (debuggable) console.log('dragmove');
 		scalegroup.each(function(i, children) {
 			if (this.data('type')=='pull') {
-        var scgtransf = scalegroup.transform()
-        var thistransf = circle.transform()
-        var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
-        var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
-				if (this.insideGbox(xx, yy)) {
+				if (this.inside(circle.x(), circle.y())) {
 					if (debuggable) console.log('hover inside ' + this.attr('id'));
 					this.first().show();
 				} else {
@@ -450,16 +377,12 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 		var found = false;
 		scalegroup.each(function(i, children) {
 			if (this.data('type')=='pull' && !found) {
-        var scgtransf = scalegroup.transform()
-        var thistransf = circle.transform()
-        var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
-        var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
-				if (this.insideGbox(xx, yy)) {
-					if (debuggable)	console.log('end inside ' + this.attr('id'));
+				if (this.inside(circle.x(), circle.y())) {
+					if (debuggable)	console.log('inside ' + this.attr('id'));
 					circle.data('parent', this.attr('id'))
 					found = true;
 				} else {
-					if (debuggable) console.log('end not inside ' + this.attr('id'));
+					if (debuggable) console.log('not inside ' + this.attr('id'));
 					circle.data('parent', null)
 				}
 				this.first().hide();
@@ -467,7 +390,7 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 		});
 		if (drgmove) {
       scalegroup.each(function(i, children) {
-        if (this.data('idfrom')==circle.attr('id') || this.data('idto')==circle.attr('id')) {
+        if (this.data('node-from')==circle.attr('id') || this.data('node-to')==circle.attr('id')) {
           this.update(true);
         }
       })
@@ -496,7 +419,7 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 					// иконка от id
 					switch (e.target.id) {
 					  case 'start_dropdown_1':
-						inner_type.plain('')
+						$('#' + circ.attr('id')+'_inner_type').html('');
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'start_dropdown_2':
@@ -508,13 +431,11 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'start_dropdown_4':
-            inner_type.plain('\ue805')
-            //$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-doc-text"></i>');
+						$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-doc-text"></i>');
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'start_dropdown_5':
-						//$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-collapse"></i>');
-            inner_type.plain('\ue807')
+						$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-collapse"></i>');
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'start_dropdown_6':
@@ -530,8 +451,7 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 						new_window('/pls/gis/ais_wf.p_scheme.p_obj_admin?v_model_id=' + l_model_id + '&v_id=' + circle.attr('id'))
 						break
 					  default:
-						//$('#' + circ.attr('id')+'_inner_type').html('');
-            inner_type.plain('')
+						$('#' + circ.attr('id')+'_inner_type').html('');
 						circle.data({inner_type: e.target.id})
 					};
 
@@ -551,19 +471,19 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 					// иконка от id
 					switch (e.target.id) {
 					  case 'inter_dropdown_1':
-						inner_type.plain('')
+						$('#' + circ.attr('id')+'_inner_type').html('');
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'inter_dropdown_2':
-						inner_type.plain('\ue803')
+						$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-mail"></i>');
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'inter_dropdown_3':
-						inner_type.plain('\ue804')
+						$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-clock"></i>');
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'inter_dropdown_4':
-						inner_type.plain('\ue814')
+						$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-mail-alt"></i>');
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'inter_dropdown_5':
@@ -602,7 +522,7 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 						new_window('/pls/gis/ais_wf.p_scheme.p_obj_admin?v_model_id=' + l_model_id + '&v_id=' + circle.attr('id'))
 						break
 					  default:
-						inner_type.plain('')
+						$('#' + circ.attr('id')+'_inner_type').html('');
 						circle.data({inner_type: e.target.id})
 					};
 
@@ -622,7 +542,7 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 					// иконка от id
 					switch (e.target.id) {
 					  case 'end_dropdown_1':
-						inner_type.plain('')
+						$('#' + circ.attr('id')+'_inner_type').html('');
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'end_dropdown_2':
@@ -646,7 +566,7 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'end_dropdown_7':
-						inner_type.plain('\ue807')
+						$('#' + circ.attr('id')+'_inner_type').html('<i class="icon-collapse"></i>');
 						circle.data({inner_type: e.target.id})
 						break
 					  case 'end_dropdown_8':
@@ -661,7 +581,7 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 						new_window('/pls/gis/ais_wf.p_scheme.p_obj_admin?v_model_id=' + l_model_id + '&v_id=' + circle.attr('id'))
 						break
 					  default:
-						inner_type.plain('')
+						$('#' + circ.attr('id')+'_inner_type').html('');
 						circle.data({inner_type: e.target.id})
 					};
 
@@ -676,12 +596,15 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 
 	if (subtype==1) {
 		circ.attr({ fill: '#f5f5f5', stroke: "#22B14C", "stroke-width": 2 })
+		//circle.data({inner_type: 'start_dropdown_1'})
 		circ_inner.hide()
 	} else if (subtype==2) {
 		circ.attr({ fill: '#f5f5f5', stroke: "#3F48CC", "stroke-width": 2 })
 		circ_inner.attr({ stroke: "#3F48CC" })
+		//circle.data({inner_type: 'inter_dropdown_1'})
 	} else {
 		circ.attr({ fill: '#f5f5f5', stroke: "#ED1C24", "stroke-width": 4 })
+		//circle.data({inner_type: 'end_dropdown_1'})
 		circ_inner.hide()
 	};
 
@@ -694,12 +617,15 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 			if (id == entry) {
 				if (subtype==1) {
 					circ.attr({ fill: '#f5f5f5', stroke: "#22B14C", "stroke-width": 2 })
+					//circle.data({inner_type: 'start_dropdown_1'})
 					circ_inner.hide()
 				} else if (subtype==2) {
 					circ.attr({ fill: '#f5f5f5', stroke: "#3F48CC", "stroke-width": 2 })
 					circ_inner.attr({ stroke: "#3F48CC" })
+					//circle.data({inner_type: 'inter_dropdown_1'})
 				} else {
 					circ.attr({ fill: '#f5f5f5', stroke: "#ED1C24", "stroke-width": 4 })
+					//circle.data({inner_type: 'end_dropdown_1'})
 					circ_inner.hide()
 				};
 			}
@@ -717,56 +643,40 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 		if (editable) {
 			if (debuggable) console.log("circle dbl");
 
-			var xx = (circle.x()-35)*actualZoom - $('#input_textarea').width()/4 + scalegroup.x();
-			var yy = (circle.y()-35)*actualZoom + circ_outer.height()*actualZoom + scalegroup.y();
+			var xx = circle.x()*actualZoom - $('#input_textarea').width()/4 + scalegroup.x();
+			var yy = circle.y()*actualZoom + circ_outer.height()*actualZoom + scalegroup.y();
 
 			// var xx = pull.x()*actualZoom - $('#input_textarea').width()/2 + scalegroup.x();
 			// var yy = pull.y()*actualZoom + rect_outer.height()*actualZoom/2 + scalegroup.y();
 
-			$('#input_textarea').val(inner_text.text())
+			$('#input_textarea').val($('#' + circ.attr('id')+'_inner_text').html())
 			$('#input_textarea').show()
 			$('#input_textarea').css({'position':'absolute', 'left': xx, 'top': yy});
 			$('#input_textarea').focus();
 
 			document.addEventListener('mousedown', function(e){
-				if (circle.insideGbox(e.pageX, e.pageY)) {
+				var xx = (e.pageX - scalegroup.x())/actualZoom;
+				var yy = (e.pageY - scalegroup.y())/actualZoom;
+
+				if (circle.inside(xx, yy)) {
 					if (debuggable) console.log("inside");
 				} else {
-					if (e.target.nodeName != 'A' && e.target.nodeName != 'TEXTAREA' ) {
+					if (e.target.nodeName != 'A') {
 						if (debuggable) console.log(e.target.nodeName);
 						if (debuggable) console.log("click on " + e.target.nodeName + " is outside");
 
 						if ( $('#input_textarea').is(":visible") ) {
 							if (debuggable) console.log("visible");
-
-							$('#input_textarea').hide()
-
-              if ($('#input_textarea').val()!='') {
+							$('#' + circ.attr('id')+'_inner_text').html($('#input_textarea').val());
+							circle.data({inner_text: $('#input_textarea').val()});
+							if ($('#input_textarea').val()!='') {
 								inner_text.show();
-
-                innertext = $('#input_textarea').val();
-
-                inner_text.text(function(add) {
-                  $.each(innertext.split('\n'), function(k, val){
-                    add.tspan(val).newLine()
-                  });
-                })
-
-                var linesset = inner_text.lines()
-                if (debuggable) console.log("linesset", linesset);
-                linesset.each(function(i, children) {
-                  if (debuggable) console.log("this id " + this.attr('id') + " this.length " + this.length());
-                  this.dx(-this.length()/2+25)
-                })
-                circle.data('inner_text', inner_text.text());
-                if (debuggable) console.log("INNER TEXT " + inner_text.text());
-
 							} else {
 								inner_text.hide();
-                inner_text.clear();
 							}
+							$('#input_textarea').hide()
 						}
-            menu_backgrnd.hide();
+
 						draw.hide();
 						del.hide();
 						settings.hide();
@@ -783,9 +693,8 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 
 	circle.on('click',function(e) {
 		if (editable) {
-      circle.front();
 			circ_outer.show().attr({ stroke: "green" });
-      menu_backgrnd.show();
+
 			draw.show();
 			del.show();
 			settings.show();
@@ -794,15 +703,23 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 			document.addEventListener('mousedown', function(e){
 				var xx = (e.pageX - scalegroup.x())/actualZoom;
 				var yy = (e.pageY - scalegroup.y())/actualZoom;
+        /*console.log(' b xx=' + e.pageX + ' b yy=' + e.pageY);
+        console.log(' t xx=' + xx + ' t yy=' + yy);
 
-        if (circle.insideGbox(e.pageX, e.pageY)) {
+        console.log('circle x=' + circle.x() + ' circle.y=' + circle.y());
+        console.log('circ_outer bbox.x=' + circ_outer.bbox().x + ' bbox.y=' + circ_outer.bbox().y + ' bbox.w=' + circ_outer.bbox().w + ' bbox.h=' + circ_outer.bbox().h);
+        console.log('circle bbox.x=' + circle.bbox().x + ' bbox.y=' + circle.bbox().y + ' bbox.w=' + circle.bbox().w + ' bbox.h=' + circle.bbox().h);
+
+        console.log('circle tbox.x=' + circle.tbox().x + ' tbox.y=' + circle.tbox().y + ' tbox.w=' + circle.tbox().w + ' tbox.h=' + circle.tbox().h);
+        var rect = svg.rect(circle.tbox().w, circle.tbox().h).move(circle.tbox().x,circle.tbox().y).attr({ fill: 'none', stroke: "#cd4436", "stroke-width": 4, "stroke-opacity"  : 0.7 })*/
+
+				if (circle.insideTbox(xx, yy)) {
 					if (debuggable) console.log("inside");
 					//document.removeEventListener('mousedown', arguments.callee);
 				} else {
-					if (e.target.nodeName != 'A' && e.target.nodeName != 'TEXTAREA' ) {
+					if (e.target.nodeName != 'A') {
 						if (debuggable) console.log("click on " + e.target.nodeName + " is outside");
-            menu_backgrnd.hide();
-            draw.hide();
+						draw.hide();
 						del.hide();
 						settings.hide();
 
@@ -853,10 +770,10 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 				});
 
 				document.addEventListener('mousedown', function(e){
-					//var xx = (e.pageX - scalegroup.x())/actualZoom;
-					//var yy = (e.pageY - scalegroup.y())/actualZoom;
+					var xx = (e.pageX - scalegroup.x())/actualZoom;
+					var yy = (e.pageY - scalegroup.y())/actualZoom;
 
-					if (circle.insideGbox(e.pageX, e.pageY)) {
+					if (circle.inside(xx, yy)) {
 						if (debuggable) console.log("inside");
 						//document.removeEventListener('mousedown', arguments.callee);
 					} else {
@@ -875,7 +792,8 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 	});
 
 	draw.click(function(e) {
-		//if (debuggable) console.log("draw click");
+		//if (debuggable)
+     console.log("draw click");
 		line = svg.line(circle.cx(), circle.cy(), circle.cx(), circle.cy()).stroke({ width: 1 });
 
 		document.addEventListener('mousemove', procDrawLine);
@@ -884,7 +802,8 @@ function addCircle(subtype, innertype, innertext, id, oraid, xcoor, ycoor, paren
 	});
 
 	del.click(function(e) {
-    deleteBPMNline(circle.attr('id'));
+		//delLine(circle.attr('id'));
+		delPolyline(circle.attr('id'));
 		circle.remove();
 		e.stopPropagation();
 	});
@@ -895,102 +814,75 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 	//set defaults if necessary
 	innertype = typeof innertype !== 'undefined' ? innertype : 'task_dropdown_1';
 	innertext = typeof innertext !== 'undefined' ? innertext : '';
-	xcoor = typeof xcoor !== 'undefined' ? xcoor : (150-scalegroup.x())/actualZoom;
-	ycoor = typeof ycoor !== 'undefined' ? ycoor : (150-scalegroup.y())/actualZoom;
+	xcoor = typeof xcoor !== 'undefined' ? xcoor : (100-scalegroup.x())/actualZoom;
+	ycoor = typeof ycoor !== 'undefined' ? ycoor : (100-scalegroup.y())/actualZoom;
 	id = typeof id !== 'undefined' ? id : -1;
 	oraid = typeof oraid !== 'undefined' ? oraid : -1;
 	parent = typeof parent !== 'undefined' ? parent : -1;
 
-	var rect_focus = svg.rect(110, 90).attr({ fill: 'none', stroke: "#cd4436", "stroke-width": 4, "stroke-opacity"  : 0.7 }).move(-55,-45).hide();
-	var rect_outer = svg.rect(110, 90).attr({ fill: 'none', stroke: "#d9534f", "stroke-width": 2, "stroke-dasharray": 4, "stroke-opacity"  : 0.5 }).move(-55,-45).hide();
-	var rect = svg.rect(100, 80).attr({ fill: '#f5f5f5', stroke: "#7092BE", "stroke-width": 2 }).move(-50,-40);
+	var rect_focus = svg.rect(110, 90).attr({ fill: '#f5f5f5', stroke: "#cd4436", "stroke-width": 4, "stroke-opacity"  : 0.7 }).move(-5,-5).hide();
+	var rect_outer = svg.rect(110, 90).attr({ fill: '#f5f5f5', stroke: "#d9534f", "stroke-width": 2, "stroke-dasharray": 4, "stroke-opacity"  : 0.5 }).move(-5,-5).hide();
+	var rect = svg.rect(100, 80).attr({ fill: '#f5f5f5', stroke: "#7092BE", "stroke-width": 2 });
 
-  //фон для меню
-  var menu_backgrnd = svg.rect(25,80)
-                         .attr({ fill: '#ececec', opacity: 0.7 })
-                         .move(52,-47)
-                         .hide();
+	var settings = svg.foreignObject(20,20).attr({id: rect.attr('id')+'_settings'}).hide();
+	$('#' + rect.attr('id')+'_settings').html('<i class="icon-cog"></i>');
+	settings.attr({width: 20, height: 20, cursor: 'pointer'}).move(105,-10);
 
-  var draw = svg.plain('\ue801')
-                .attr({cursor: 'pointer'})
-                .font({family: 'fontello', size: 20})
-                .move(57,-45)
-                .hide();
+	var draw = svg.foreignObject(20,20).attr({id: rect.attr('id')+'_draw'}).hide();
+	$('#' + rect.attr('id')+'_draw').html('<i class="icon-level-down"></i>');
+	draw.attr({width: 20, height: 20, cursor: 'pointer'}).move(105,5);
 
-  var settings = svg.plain('\ue802')
-                    .attr({cursor: 'pointer'})
-                    .font({family: 'fontello', size: 20})
-                    .move(55,-20)
-                    .hide();
+	var del = svg.foreignObject(20,20).attr({id: rect.attr('id')+'_del'}).hide();
+	$('#' + rect.attr('id')+'_del').html('<i class="icon-trash-empty"></i>');
+	del.attr({width: 20, height: 20, cursor: 'pointer'}).move(105,70);
 
-  var del = svg.plain('\ue800')
-               .attr({cursor: 'pointer'})
-               .font({family: 'fontello', size: 20})
-               .move(55,5)
-               .hide();
+	var inner_type = svg.foreignObject(20,20).attr({id: rect.attr('id')+'_inner_type'});
+	inner_type.attr({width: 20, height: 20}).move(0,80);
 
-  var inner_type = svg.plain('')
-                      .font({family: 'fontello', size: 20})
-                      .addClass('noselect')
-                      .move(-50,58)
-
+	inner_type.style('border', '1px solid black');
 	switch (innertype) {
 	  case 'task_dropdown_1':
-    inner_type.plain('\ue811')
+		$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-user"></i>');
 		break
 	  case 'task_dropdown_2':
 		$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-right-hand"></i>');
 		break
 	  case 'task_dropdown_3':
-    inner_type.plain('\ue812')
+		$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-cog-alt"></i>');
 		break
 	  case 'task_dropdown_4':
-    inner_type.plain('\ue81b')
+		$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-ccw"></i>');
 		break
 	  case 'task_dropdown_5':
 		$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-table"></i>');
 		break
 	  case 'task_dropdown_6':
-    inner_type.plain('\ue814')
+		$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-mail-alt"></i>');
 		break
 	  case 'task_dropdown_7':
-    inner_type.plain('\ue803')
+		$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-mail"></i>');
 		break
 	  case 'task_dropdown_8':
 		inner_type.style('border', 'none');
 		$('#' + rect.attr('id')+'_inner_type').html('');
 		break
 	  default:
-		inner_type.plain('\ue811')
+		inner_type.style('border', 'none');
+		$('#' + rect.attr('id')+'_inner_type').html('');
 	};
 
-  var inner_text = svg.text('')
-                      .style('cursor:default;')
-                      .addClass('noselect')
-                      .move(-50,-45)
-                      .hide();
-
-  if (innertext!='') {
-    inner_text.show();
-    //innertext = innertext.split('\n');
-    inner_text.text(function(add) {
-      $.each(innertext.split('\n'), function(k, val){
-        add.tspan(val).newLine()
-      });
-    })
-    var linesset = inner_text.lines()
-    linesset.each(function(i, children) {
-      this.dx(-this.length()/2+50)
-    })
-  }
+	var inner_text = svg.foreignObject(100,80).attr({id: rect.attr('id')+'_inner_text'});
+	inner_text.attr({width: 100, height: 80}).move(1,1).style('cursor:default; word-wrap: break-word; text-align: center;').hide();
+	$('#' + rect.attr('id')+'_inner_text').html(innertext)
+	if (innertext!='') inner_text.show()
 
 	if (debuggable) console.log(rect.attr('id'))
+
 
 	var task = svg.group();
 		task.add(rect_focus);
 		task.add(rect_outer);
 		task.add(rect);
-    task.add(menu_backgrnd);
 		task.add(settings);
 		task.add(draw);
 		task.add(del);
@@ -1002,19 +894,13 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 			inner_text.style('cursor:pointer;')
 		} else {
 			task.draggy(function (x, y, elem) {
+				var res = {};
 
-        var res = {};
-        res.x = x - (x % snapRange);
-        res.y = y - (y % snapRange);
+				res.x = x - (x % snapRange);
+				res.y = y - (y % snapRange);
 
-        scalegroup.each(function(i, children) {
-          if (task.attr('id')!=this.attr('id')) {
-            if (Math.abs(this.x()-res.x)<10) res.x= this.x()
-            if (Math.abs(this.y()-res.y)<10) res.y= this.y()
-          }
-        })
-        return res;
-      });
+				return res;
+			});
 		}
 		task.move(xcoor,ycoor);
 
@@ -1038,6 +924,13 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		task.data('parent', parent)
 		if (debuggable) console.log(task.data('parent'))
 	}
+
+	//focus (highlight) if nessesary
+	/*focused_node.forEach(function(entry) {
+		if (id == entry) {
+			rect_focus.show()
+		}
+	});*/
 
 	//changing style
 	if (!adminable) {
@@ -1080,7 +973,10 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		var x2 = e.pageX;
 		var y2 = e.pageY;
 
-		line.plot(x1, y1, x2, y2).attr({stroke: '#333333', 'stroke-dasharray': '2,2'});
+
+		// var x2 = e.pageX - $('.graph').offset().left;
+		// var y2 = e.pageY - $('.graph').offset().top;
+		line.plot(x1, y1, x2, y2);
 	};
 
 	function stopDrawLine(e){
@@ -1088,14 +984,19 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		document.removeEventListener('mousemove', procDrawLine);
 		document.removeEventListener('click', stopDrawLine);
 
+		// var x2 = e.pageX - $('.graph').offset().left;
+		// var y2 = e.pageY - $('.graph').offset().top;
+
+		var x2 = (e.pageX - scalegroup.x())/actualZoom;
+		var y2 = (e.pageY - scalegroup.y())/actualZoom;
+
 		line.remove();
-		if (!task.insideGbox(e.pageX, e.pageY)) {
+		if (!task.inside(x2, y2)) {
 			scalegroup.each(function(i, children) {
-				//if (this.inside(x2, y2)) {
-        if (this.data('isnode')==true && this.insideGbox(e.pageX, e.pageY)) {
+				if (this.inside(x2, y2)) {
 					if (debuggable) console.log('try to connect with ' + this.attr('id'));
-					if (this.data('isnode')==true && this.data('type')!='pull') {
-            scalegroup.add( svg.bpmnline( { fromid: task.attr('id'), toid: this.attr('id') } ) );
+					if (this.data('isnode')) {
+						drawPolyline(task.attr('id'),this.attr('id'));
 					} else {
 						if (debuggable) console.log('data false');
 					}
@@ -1117,11 +1018,7 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		if (debuggable) console.log('dragmove');
 		scalegroup.each(function(i, children) {
 			if (this.data('type')=='pull') {
-        var scgtransf = scalegroup.transform()
-        var thistransf = task.transform()
-        var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
-        var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
-				if (this.insideGbox(xx, yy)) {
+				if (this.inside(task.x(), task.y())) {
 					if (debuggable) console.log('hover inside ' + this.attr('id'));
 					this.first().show();
 				} else {
@@ -1139,11 +1036,7 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		var found = false;
 		scalegroup.each(function(i, children) {
 			if (this.data('type')=='pull' && !found) {
-        var scgtransf = scalegroup.transform()
-        var thistransf = task.transform()
-        var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
-        var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
-				if (this.insideGbox(xx, yy)) {
+				if (this.inside(task.x(), task.y())) {
 					if (debuggable) console.log('inside ' + this.attr('id'));
 					task.data('parent', this.attr('id'))
 					found = true;
@@ -1155,13 +1048,7 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 			}
 		});
 
-		if (drgmove) {
-      scalegroup.each(function(i, children) {
-        if (this.data('idfrom')==task.attr('id') || this.data('idto')==task.attr('id')) {
-          this.update(true);
-        }
-      })
-    }
+		if (drgmove) updatePolyline(task.attr('id'))
 		drgmove = false;
 		$('.graph').on('mousedown', function(e) {
 			$( this ).css('cursor', 'move')
@@ -1172,57 +1059,42 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 	task.dblclick(function(e) {
 		if (debuggable) console.log("task dbl");
 
-		var xx = task.x()*actualZoom - $('#input_textarea').width()/4 + scalegroup.x()-45;
+		var xx = task.x()*actualZoom - $('#input_textarea').width()/4 + scalegroup.x();
 		var yy = task.y()*actualZoom + scalegroup.y();
 
-    $('#input_textarea').val(inner_text.text())
+		// var xx = pull.x()*actualZoom - $('#input_textarea').width()/2 + scalegroup.x();
+		// var yy = pull.y()*actualZoom + rect_outer.height()*actualZoom/2 + scalegroup.y();
+
+
+
+		$('#input_textarea').val($('#' + rect.attr('id')+'_inner_text').html())
 		$('#input_textarea').show()
 		$('#input_textarea').css({'position':'absolute', 'left': xx, 'top': yy});
 		$('#input_textarea').focus();
 
 		document.addEventListener('mousedown', function(e){
-			//var xx = (e.pageX - scalegroup.x())/actualZoom;
-			//var yy = (e.pageY - scalegroup.y())/actualZoom;
+			var xx = (e.pageX - scalegroup.x())/actualZoom;
+			var yy = (e.pageY - scalegroup.y())/actualZoom;
 
-			if (task.insideGbox(e.pageX, e.pageY)) {
+			if (task.inside(xx, yy)) {
 				if (debuggable) console.log("inside");
 			} else {
-				if (e.target.nodeName != 'A' && e.target.nodeName != 'TEXTAREA') {
+				if (e.target.nodeName != 'A') {
 					if (debuggable) console.log(e.target.nodeName);
 					if (debuggable) console.log("outside");
 
 					if ( $('#input_textarea').is(":visible") ) {
 						if (debuggable) console.log("visible")
-
-            $('#input_textarea').hide()
-
-            if ($('#input_textarea').val()!='') {
-							inner_text.show();
-
-              innertext = $('#input_textarea').val();
-
-              inner_text.text(function(add) {
-                $.each(innertext.split('\n'), function(k, val){
-                  add.tspan(val).newLine()
-                });
-              })
-
-              var linesset = inner_text.lines()
-              if (debuggable) console.log("linesset", linesset);
-              linesset.each(function(i, children) {
-                if (debuggable) console.log("this id " + this.attr('id') + " this.length " + this.length());
-                this.dx(-this.length()/2+50)
-              })
-              task.data('inner_text', inner_text.text());
-              if (debuggable) console.log("INNER TEXT " + inner_text.text());
-
+						$('#' + rect.attr('id')+'_inner_text').html($('#input_textarea').val())
+						task.data({inner_text: $('#input_textarea').val()})
+						if ($('#input_textarea').val()!='') {
+							inner_text.show()
 						} else {
-							inner_text.hide();
-              inner_text.clear();
+							inner_text.hide()
 						}
+						$('#input_textarea').hide()
 					}
 
-          menu_backgrnd.hide();
 					draw.hide();
 					del.hide();
 					settings.hide();
@@ -1243,10 +1115,9 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 	task.click(function(e) {
 		if (editable) {
 			if (debuggable) console.log("rect click");
-      task.front();
+
 			rect_outer.show().attr({ stroke: "green" });
 
-      menu_backgrnd.show();
 			draw.show();
 			del.show();
 			settings.show();
@@ -1255,13 +1126,13 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 				var xx = (e.pageX - scalegroup.x())/actualZoom;
 				var yy = (e.pageY - scalegroup.y())/actualZoom;
 
-				if (task.insideGbox(e.pageX, e.pageY)) {
+				if (task.inside(xx, yy)) {
 					if (debuggable) console.log("inside");
 				} else {
-					if (e.target.nodeName != 'A' && e.target.nodeName != 'TEXTAREA') {
+					if (e.target.nodeName != 'A') {
 						if (debuggable) console.log(e.target.nodeName);
 						if (debuggable) console.log("outside");
-            menu_backgrnd.hide();
+
 						draw.hide();
 						del.hide();
 						settings.hide();
@@ -1280,8 +1151,8 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 			if (typeof customclick === "function") {
 				customclick(task.attr('id'));
 			} else {
-        var xx = e.pageX /*- $('.graph').offset().left*/;
-				var yy = e.pageY /*- $('.graph').offset().top*/;
+				var xx = e.pageX - $('.graph').offset().left;
+				var yy = e.pageY - $('.graph').offset().top;
 
 				$('#preview_dropdown').show()
 				$('#preview_dropdown').css({'position':'absolute', 'left': xx, 'top': yy});
@@ -1310,10 +1181,10 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 				});
 
 				document.addEventListener('mousedown', function(e){
-					//var xx = (e.pageX - scalegroup.x())/actualZoom;
-					//var yy = (e.pageY - scalegroup.y())/actualZoom;
+					var xx = (e.pageX - scalegroup.x())/actualZoom;
+					var yy = (e.pageY - scalegroup.y())/actualZoom;
 
-					if (task.insideGbox(e.pageX, e.pageY)) {
+					if (task.inside(xx, yy)) {
 						if (debuggable) console.log("inside");
 						//document.removeEventListener('mousedown', arguments.callee);
 					} else {
@@ -1347,7 +1218,7 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 				inner_type.style('border', '1px solid black');
 				switch (e.target.id) {
 				  case 'task_dropdown_1':
-					inner_type.plain('\ue811')
+					$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-user"></i>');
 					task.data({inner_type: e.target.id})
 					break
 				  case 'task_dropdown_2':
@@ -1355,11 +1226,11 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 					task.data({inner_type: e.target.id})
 					break
 				  case 'task_dropdown_3':
-					inner_type.plain('\ue812')
+					$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-cog-alt"></i>');
 					task.data({inner_type: e.target.id})
 					break
 				  case 'task_dropdown_4':
-					inner_type.plain('\ue81b')
+					$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-ccw"></i>');
 					task.data({inner_type: e.target.id})
 					break
 				  case 'task_dropdown_5':
@@ -1367,11 +1238,11 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 					task.data({inner_type: e.target.id})
 					break
 				  case 'task_dropdown_6':
-					inner_type.plain('\ue814')
+					$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-mail-alt"></i>');
 					task.data({inner_type: e.target.id})
 					break
 				  case 'task_dropdown_7':
-					inner_type.plain('\ue803')
+					$('#' + rect.attr('id')+'_inner_type').html('<i class="icon-mail"></i>');
 					task.data({inner_type: e.target.id})
 					break
 				  case 'task_dropdown_8':
@@ -1383,7 +1254,8 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 					new_window('/pls/gis/ais_wf.p_scheme.p_obj_admin?v_model_id=' + l_model_id + '&v_id=' + task.attr('id'))
 					break
 				  default:
-					inner_type.plain('\ue811')
+					inner_type.style('border', 'none');
+					$('#' + rect.attr('id')+'_inner_type').html('');
 					task.data({inner_type: e.target.id})
 				};
 
@@ -1402,7 +1274,7 @@ function addTask(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 	});
 
 	del.click(function(e) {
-    deleteBPMNline(task.attr('id'));
+		delPolyline(task.attr('id'));
 		task.remove();
 		e.stopPropagation();
 	});
@@ -1413,91 +1285,60 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 	//set defaults if necessary
 	innertype = typeof innertype !== 'undefined' ? innertype : 'decision_dropdown_1';
 	innertext = typeof innertext !== 'undefined' ? innertext : '';
-	xcoor = typeof xcoor !== 'undefined' ? xcoor : (130-scalegroup.x())/actualZoom;
+	xcoor = typeof xcoor !== 'undefined' ? xcoor : (100-scalegroup.x())/actualZoom;
 	ycoor = typeof ycoor !== 'undefined' ? ycoor : (150-scalegroup.y())/actualZoom;
 	id = typeof id !== 'undefined' ? id : -1;
 	oraid = typeof oraid !== 'undefined' ? oraid : -1;
 	parent = typeof parent !== 'undefined' ? parent : -1;
 
-	var romb_focus = svg.rect(60, 60).attr({ fill: 'none', stroke: "#cd4436", "stroke-width": 4, "stroke-opacity"  : 0.7 }).move(-30,-30).hide();
-	var romb_outer = svg.rect(60, 60).attr({ fill: 'none', stroke: "#d9534f", "stroke-width": 2, "stroke-dasharray": 4, "stroke-opacity"  : 0.5 }).move(-30,-30).hide();
-	var romb = svg.rect(50, 50).attr({ fill: '#f5f5f5', stroke: "#A349A4", "stroke-width": 2 }).move(-25,-25);
+	var romb_focus = svg.rect(60, 60).attr({ fill: '#f5f5f5', stroke: "#cd4436", "stroke-width": 4, "stroke-opacity"  : 0.7 }).move(-5,-5).hide();
+	var romb_outer = svg.rect(60, 60).attr({ fill: '#f5f5f5', stroke: "#d9534f", "stroke-width": 2, "stroke-dasharray": 4, "stroke-opacity"  : 0.5 }).move(-5,-5).hide();
+	var romb = svg.rect(50, 50).attr({ fill: '#f5f5f5', stroke: "#A349A4", "stroke-width": 2 });;
 	var connection;
 
 	romb_focus.rotate(45, romb.cx(), romb.cy())
 	romb_outer.rotate(45, romb.cx(), romb.cy())
-	romb.rotate(45)
+	romb.rotate(45, romb.cx(), romb.cy())
 
-  //фон для меню
-  var menu_backgrnd = svg.rect(25,80)
-                         .attr({ fill: '#ececec', opacity: 0.7 })
-                         .move(32,-42)
-                         .hide()
+	var settings = svg.foreignObject(20,20).attr({id: romb.attr('id')+'_settings'}).hide();
+	$('#' + romb.attr('id')+'_settings').html('<i class="icon-cog"></i>');
+	settings.attr({width: 20, height: 20, cursor: 'pointer'}).move(50,-20);
 
-  var draw = svg.plain('\ue801')
-                .attr({cursor: 'pointer'})
-                .font({family: 'fontello', size: 20})
-                .move(38,-40)
-                .hide()
+	var draw = svg.foreignObject(20,20).attr({id: romb.attr('id')+'_draw'}).hide();
+	$('#' + romb.attr('id')+'_draw').html('<i class="icon-level-down"></i>');
+	draw.attr({width: 20, height: 20, cursor: 'pointer'}).move(50,-5);
 
-  var settings = svg.plain('\ue802')
-                    .attr({cursor: 'pointer'})
-                    .font({family: 'fontello', size: 20})
-                    .move(35,-15)
-                    .hide()
+	var del = svg.foreignObject(20,20).attr({id: romb.attr('id')+'_del'}).hide();
+	$('#' + romb.attr('id')+'_del').html('<i class="icon-trash-empty"></i>');
+	del.attr({width: 20, height: 20, cursor: 'pointer'}).move(50,45);
 
-  var del = svg.plain('\ue800')
-               .attr({cursor: 'pointer'})
-               .font({family: 'fontello', size: 20})
-               .move(35,10)
-               .hide()
-
-
-  var inner_type = svg.text('')
-                     .font({family: 'fontello', size: 20})
-                     .addClass('noselect')
+	var inner_type = svg.foreignObject(20,20).attr({id: romb.attr('id')+'_inner_type'});
+	inner_type.attr({width: 30, height: 20}).style('text-align: center;').move(10,15);
 
 	// текст от id
 	switch (innertype) {
 	  case 'decision_dropdown_1':
-    inner_type.text('И').move(-8,-12)
+		$('#' + romb.attr('id')+'_inner_type').html('И');
 		break
 	  case 'decision_dropdown_2':
-    inner_type.text('ИЛИ').move(-21,-12)
+		$('#' + romb.attr('id')+'_inner_type').html('ИЛИ');
 		break
 	  case 'decision_dropdown_3':
-    inner_type.text('Искл.\nИЛИ').font({size: 16}).move(-17,-20)
+		$('#' + romb.attr('id')+'_inner_type').html('Искл. ИЛИ');
 		break
 	  default:
-    inner_type.text('И').move(-8,-12)
+		$('#' + romb.attr('id')+'_inner_type').html('');
 	};
 
-
-  var inner_text = svg.text('')
-                      .style('cursor:default;')
-                      .addClass('noselect')
-                      .move(-35,30)
-                      .hide()
-
-  if (innertext!='') {
-    inner_text.show();
-    //innertext = innertext.split('\n');
-    inner_text.text(function(add) {
-      $.each(innertext.split('\n'), function(k, val){
-        add.tspan(val).newLine()
-      });
-    })
-    var linesset = inner_text.lines()
-    linesset.each(function(i, children) {
-      this.dx(-this.length()/2+30)
-    })
-  }
+	var inner_text = svg.foreignObject(100,50).attr({id: romb.attr('id')+'_inner_text'});
+	inner_text.attr({width: 100, height: 50}).move(-25,60).style('cursor:default; word-wrap: break-word; text-align: center;').hide();
+	$('#' + romb.attr('id')+'_inner_text').html(innertext)
+	if (innertext!='') inner_text.show()
 
 	var decision = svg.group();
 		decision.add(romb_focus);
 		decision.add(romb_outer);
 		decision.add(romb);
-    decision.add(menu_backgrnd);
 		decision.add(settings);
 		decision.add(draw);
 		decision.add(del);
@@ -1508,19 +1349,13 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 			decision.attr('cursor','pointer')
 		} else {
 			decision.draggy(function (x, y, elem) {
+				var res = {};
 
-        var res = {};
-        res.x = x - (x % snapRange);
-        res.y = y - (y % snapRange);
+				res.x = x - (x % snapRange);
+				res.y = y - (y % snapRange);
 
-        scalegroup.each(function(i, children) {
-          if (decision.attr('id')!=this.attr('id')) {
-            if (Math.abs(this.x()-res.x)<10) res.x= this.x()
-            if (Math.abs(this.y()-res.y)<10) res.y= this.y()
-          }
-        })
-        return res;
-      })
+				return res;
+			})
 		}
 		decision.move(xcoor,ycoor);
 
@@ -1544,6 +1379,13 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		decision.data('parent', parent)
 		if (debuggable) console.log(decision.data('parent'))
 	}
+
+	//focus (highlight) if nessesary
+	/*focused_node.forEach(function(entry) {
+		if (id == entry) {
+			romb_focus.show()
+		}
+	});*/
 
 	if (!adminable) {
 		romb.attr({ stroke: "#7E7E7E" })
@@ -1584,7 +1426,7 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		var x2 = e.pageX;
 		var y2 = e.pageY;
 
-		line.plot(x1, y1, x2, y2).attr({stroke: '#333333', 'stroke-dasharray': '2,2'});
+		line.plot(x1, y1, x2, y2);
 	};
 
 	function stopDrawLine(e){
@@ -1596,13 +1438,12 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		var y2 = (e.pageY - scalegroup.y())/actualZoom;
 
 		line.remove();
-		if (!decision.insideGbox(e.pageX, e.pageY)) {
+		if (!decision.inside(x2, y2)) {
 			scalegroup.each(function(i, children) {
-				//if (this.inside(x2, y2)) {
-        if (this.data('isnode')==true && this.insideGbox(e.pageX, e.pageY)) {
+				if (this.inside(x2, y2)) {
 					if (debuggable) console.log('try to connect with ' + this.attr('id'));
-					if (this.data('isnode') && this.data('type')!='pull') {
-            scalegroup.add( svg.bpmnline( { fromid: decision.attr('id'), toid: this.attr('id') } ) );
+					if (this.data('isnode')) {
+						drawPolyline(decision.attr('id'),this.attr('id'));
 					} else {
 						if (debuggable) console.log('data false');
 					}
@@ -1625,11 +1466,7 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		if (debuggable) console.log('dragmove');
 		scalegroup.each(function(i, children) {
 			if (this.data('type')=='pull') {
-        var scgtransf = scalegroup.transform()
-        var thistransf = decision.transform()
-        var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
-        var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
-				if (this.insideGbox(xx, yy)) {
+				if (this.inside(decision.x(), decision.y())) {
 					if (debuggable) console.log('hover inside ' + this.attr('id'));
 					this.first().show();
 				} else {
@@ -1646,11 +1483,7 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 		var found = false;
 		scalegroup.each(function(i, children) {
 			if (this.data('type')=='pull' && !found) {
-        var scgtransf = scalegroup.transform()
-        var thistransf = decision.transform()
-        var xx = thistransf.x * scgtransf.scaleX + scgtransf.x
-        var yy = thistransf.y * scgtransf.scaleY + scgtransf.y
-				if (this.insideGbox(xx, yy)) {
+				if (this.inside(decision.x(), decision.y())) {
 					if (debuggable) console.log('inside ' + this.attr('id'));
 					decision.data('parent', this.attr('id'))
 					found = true;
@@ -1661,13 +1494,7 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 				this.first().hide();
 			}
 		});
-		if (drgmove) {
-      scalegroup.each(function(i, children) {
-        if (this.data('idfrom')==decision.attr('id') || this.data('idto')==decision.attr('id')) {
-          this.update(true);
-        }
-      })
-    }
+		if (drgmove) updatePolyline(decision.attr('id'))
 		drgmove = false;
 		$('.graph').on('mousedown', function(e) {
 			$( this ).css('cursor', 'move')
@@ -1678,55 +1505,40 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 	decision.dblclick(function(e) {
 		if (debuggable) console.log("decision dbl");
 
-		var xx = (decision.x()-30)*actualZoom - $('#input_textarea').width()/4 + scalegroup.x();
-		var yy = (decision.y()-30)*actualZoom + romb_outer.height()*actualZoom/2 + scalegroup.y();
+		var xx = decision.x()*actualZoom - $('#input_textarea').width()/4 + scalegroup.x();
+		var yy = decision.y()*actualZoom + romb_outer.height()*actualZoom/2 + scalegroup.y();
 
 		// var xx = pull.x()*actualZoom - $('#input_textarea').width()/2 + scalegroup.x();
 		// var yy = pull.y()*actualZoom + rect_outer.height()*actualZoom/2 + scalegroup.y();
 
-		$('#input_textarea').val(inner_text.text())
+		$('#input_textarea').val($('#' + romb.attr('id')+'_inner_text').html())
 		$('#input_textarea').show()
 		$('#input_textarea').css({'position':'absolute', 'left': xx, 'top': yy});
 		$('#input_textarea').focus();
 
 		document.addEventListener('mousedown', function(e){
-			if (decision.insideGbox(e.pageX, e.pageY)) {
+			var xx = (e.pageX - scalegroup.x())/actualZoom;
+			var yy = (e.pageY - scalegroup.y())/actualZoom;
+
+			if (decision.inside(xx, yy)) {
 				if (debuggable) console.log("inside");
 			} else {
-				if (e.target.nodeName != 'A' && e.target.nodeName != 'TEXTAREA') {
+				if (e.target.nodeName != 'A') {
 					if (debuggable) console.log(e.target.nodeName);
 					if (debuggable) console.log("outside");
 
 					if ( $('#input_textarea').is(":visible") ) {
 						if (debuggable) console.log("visible");
-
-            $('#input_textarea').hide()
-
-            if ($('#input_textarea').val()!='') {
-              inner_text.show();
-
-              innertext = $('#input_textarea').val();
-
-              inner_text.text(function(add) {
-              $.each(innertext.split('\n'), function(k, val){
-                add.tspan(val).newLine()
-              });
-              })
-
-              var linesset = inner_text.lines()
-              if (debuggable) console.log("linesset", linesset);
-              linesset.each(function(i, children) {
-              if (debuggable) console.log("this id " + this.attr('id') + " this.length " + this.length());
-              this.dx(-this.length()/2+25)
-              })
-              decision.data('inner_text', inner_text.text());
-              if (debuggable) console.log("INNER TEXT " + inner_text.text());
-
-            } else {
-              inner_text.hide();
-              inner_text.clear();
-            }
+						$('#' + romb.attr('id')+'_inner_text').html($('#input_textarea').val());
+						decision.data({inner_text: $('#input_textarea').val()})
+						if ($('#input_textarea').val()!='') {
+							inner_text.show();
+						} else {
+							inner_text.hide();
+						}
+						$('#input_textarea').hide()
 					}
+
 					draw.hide();
 					del.hide();
 					settings.hide();
@@ -1742,7 +1554,7 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 	decision.click(function(e) {
 		if (editable) {
 			romb_outer.show().attr({ stroke: "green" });
-      menu_backgrnd.show();
+
 			draw.show();
 			del.show();
 			settings.show();
@@ -1752,13 +1564,12 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 				var xx = (e.pageX - scalegroup.x())/actualZoom;
 				var yy = (e.pageY - scalegroup.y())/actualZoom;
 
-				if (decision.insideGbox(e.pageX, e.pageY)) {
+				if (decision.inside(xx, yy)) {
 					if (debuggable) console.log("inside");
 				} else {
-					if (e.target.nodeName != 'A' && e.target.nodeName != 'TEXTAREA') {
+					if (e.target.nodeName != 'A') {
 						if (debuggable) console.log(e.target.nodeName);
 						if (debuggable) console.log("outside");
-            menu_backgrnd.hide();
 						draw.hide();
 						del.hide();
 						settings.hide();
@@ -1806,10 +1617,10 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 				});
 
 				document.addEventListener('mousedown', function(e){
-					//var xx = (e.pageX - scalegroup.x())/actualZoom;
-					//var yy = (e.pageY - scalegroup.y())/actualZoom;
+					var xx = (e.pageX - scalegroup.x())/actualZoom;
+					var yy = (e.pageY - scalegroup.y())/actualZoom;
 
-					if (decision.insideGbox(e.pageX, e.pageY)) {
+					if (decision.inside(xx, yy)) {
 						if (debuggable) console.log("inside");
 						//document.removeEventListener('mousedown', arguments.callee);
 					} else {
@@ -1842,22 +1653,22 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 				// текст от id
 				switch (e.target.id) {
 				  case 'decision_dropdown_1':
-					inner_type.text('И').font({size: 20}).move(-8,-12)
+					$('#' + romb.attr('id')+'_inner_type').html('И');
 					decision.data({inner_type: e.target.id})
 					break
 				  case 'decision_dropdown_2':
-					inner_type.text('ИЛИ').font({size: 20}).move(-21,-12)
+					$('#' + romb.attr('id')+'_inner_type').html('ИЛИ');
 					decision.data({inner_type: e.target.id})
 					break
 				  case 'decision_dropdown_3':
-					inner_type.text('Искл.\nИЛИ').font({size: 16}).move(-17,-20)
+					$('#' + romb.attr('id')+'_inner_type').html('Искл. ИЛИ');
 					decision.data({inner_type: e.target.id})
 					break
 				  case 'decision_dropdown_card':
 					new_window('/pls/gis/ais_wf.p_scheme.p_obj_admin?v_model_id=' + l_model_id + '&v_id=' + decision.attr('id'))
 					break
 				  default:
-					inner_type.text('И').font({size: 20}).move(-8,-12)
+					$('#' + romb.attr('id')+'_inner_type').html('');
 					decision.data({inner_type: e.target.id})
 				};
 
@@ -1877,7 +1688,7 @@ function addDecision(innertype, innertext, id, oraid, xcoor, ycoor, parent) {
 	});
 
 	del.click(function(e) {
-		deleteBPMNline(decision.attr('id'));
+		delPolyline(decision.attr('id'));
 		decision.remove();
 		e.stopPropagation();
 	});
@@ -1896,82 +1707,35 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 	height = typeof height !== 'undefined' ? height : 200;
 	zndex = typeof zndex !== 'undefined' ? zndex : 0;
 
-	var rect_outer = svg.rect(width + 10, height + 10).attr({ fill: 'none', stroke: "#d9534f", "stroke-width": 2, "stroke-dasharray": 4, "stroke-opacity"  : 0.5 }).move(-5,-5).hide();
+	var rect_outer = svg.rect(width + 10, height + 10).attr({ fill: '#f5f5f5', stroke: "#d9534f", "stroke-width": 2, "stroke-dasharray": 4, "stroke-opacity"  : 0.5 }).move(-5,-5).hide();
 	var rect = svg.rect(width, height).attr({ fill: '#fff', stroke: "#000", "stroke-width": 1 });
 
-  var menu_backgrnd2 = svg.rect(25,25)
-                         .attr({ fill: '#ececec', opacity: 0.7 })
-                         .move(width - 4, height - 4)
-                         .hide()
-  //var menu_backgrnd2 = svg.rect(25,25).attr({ fill: '#ececec', opacity: 0.7 }).move(width - 4, height - 4).hide();
-  var arrowg = svg.group();
-  var arrow = svg.plain('\ue817')
-                 .font({family: 'fontello', size: 20})
-                 .attr({'cursor': 'se-resize'})
-
-
-  arrowg.add(arrow).move(width, height + 16).hide();
-
-	/*var arrow = svg.foreignObject(20,20).attr({id: rect.attr('id')+'_resize'});
+	var arrow = svg.foreignObject(20,20).attr({id: rect.attr('id')+'_resize'});
 	$('#' + rect.attr('id')+'_resize').html('<i class="icon-resize-full"></i>');
-	arrow.attr({width: 20, height: 20, 'cursor': 'se-resize'}).move(width - 2, height - 2).hide();*/
-  var inner_text_group = svg.group();
-  var inner_text_rect = svg.rect(rect.height(), 45).attr({ fill: '#fff', stroke: "#000", "stroke-width": 1 }).rotate(-90, inner_text_group.x(), inner_text_group.y());
-  var inner_text = svg.text('')
-                      .style('cursor:default;')
-                      .addClass('noselect')
-                      .rotate(-90, inner_text_group.x(), inner_text_group.y())
-                      .move(rect.height()/2,-5)
-                      .hide();
+	arrow.attr({width: 20, height: 20, 'cursor': 'se-resize'}).move(width - 2, height - 2).hide();
 
-  if (innertext!='') {
-    inner_text.show();
-    //innertext = innertext.split('\n');
-    inner_text.text(function(add) {
-      $.each(innertext.split('\n'), function(k, val){
-        add.tspan(val).newLine()
-      });
-    })
-    var linesset = inner_text.lines()
-    linesset.each(function(i, children) {
-      this.dx(-this.length()/2)
-    })
-  }
-
-  inner_text_group.add(inner_text_rect)
-  inner_text_group.add(inner_text)
-  inner_text_group.move(0,rect.height())
-
-	/*var inner_text = svg.foreignObject(0,0).attr({id: 'inner_text'})
+	var inner_text = svg.foreignObject(0,0).attr({id: 'inner_text'})
 	inner_text.appendChild("div", {id: rect.attr('id')+'_inner_text'})
 	var n = inner_text.getChild(0)
 	n.style.overflow = 'hidden'
 	n.style.border = "solid black 1px"
 	inner_text.attr({width: rect.height(), height: 45}).rotate(-90, rect.x(), rect.y()).move(-rect.height(),0).style('cursor:default; word-wrap: break-word; text-align: center;').hide();
-	$('#' + rect.attr('id')+'_inner_text').html(innertext);*/
+	$('#' + rect.attr('id')+'_inner_text').html(innertext);
 	if (innertext!='') inner_text.show();
 
-  var menu_backgrnd = svg.rect(25,50).attr({ fill: '#ececec', opacity: 0.7 }).move(-26,0).hide();
+	var settings = svg.foreignObject(20,20).attr({id: rect.attr('id')+'_settings'}).hide();
+	$('#' + rect.attr('id')+'_settings').html('<i class="icon-cog"></i>');
+	settings.attr({width: 20, height: 20, cursor: 'pointer'}).move(-23, 0);
 
-  var settings = svg.plain('\ue802')
-                    .attr({cursor: 'pointer'})
-                    .font({family: 'fontello', size: 20})
-                    .move(-23, 0)
-                    .hide();
-
-  var del = svg.plain('\ue800')
-               .attr({cursor: 'pointer'})
-               .font({family: 'fontello', size: 20})
-               .move(-23, 25)
-               .hide();
+	var del = svg.foreignObject(20,20).attr({id: rect.attr('id')+'_del'});
+	$('#' + rect.attr('id')+'_del').html('<i class="icon-trash-empty"></i>');
+	del.attr({width: 20, height: 20, cursor: 'pointer'}).move(-23, height-20).hide();
 
 	var pull = svg.group();
 	pull.add(rect_outer);
 	pull.add(rect);
-	pull.add(inner_text_group); //TODO заменить на группу с рамкой
-  pull.add(menu_backgrnd2);
-  pull.add(menu_backgrnd);
-	pull.add(arrowg);
+	pull.add(inner_text);
+	pull.add(arrow);
 	pull.add(del);
 	pull.add(settings);
 
@@ -1980,19 +1744,13 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 		inner_text.addClass('noselect').style('cursor:pointer; pointer-events:all;')
 	} else {
 		pull.draggy(function (x, y, elem) {
+			var res = {};
 
-      var res = {};
-      res.x = x - (x % snapRange);
-      res.y = y - (y % snapRange);
+			res.x = x - (x % snapRange);
+			res.y = y - (y % snapRange);
 
-      /*scalegroup.each(function(i, children) {
-        if (pull.attr('id')!=this.attr('id')) {
-          if (Math.abs(this.x()-res.x)<10) res.x= this.x()
-          if (Math.abs(this.y()-res.y)<10) res.y= this.y()
-        }
-      })*/
-      return res;
-    });
+			return res;
+		});
 	}
 
 	pull.move(xcoor,ycoor);
@@ -2049,16 +1807,10 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 			rect.size(x2, y2);
 			rect_outer.size(x2+10, y2+10);
 			clone.size(x2+12, y2+12);
-
-      //inner_text.attr({width: rect.height(), height: 30})
-			//inner_text.move(-rect.height(),0)
-
-
-
-      menu_backgrnd2.move(x2-4, y2-4);
-      arrowg.move(x2, y2+16);
-
-			//del.move(-23, rect.height()-20);
+			inner_text.attr({width: rect.height(), height: 30})
+			inner_text.move(-rect.height(),0)
+			arrow.move(x2-2, y2-2);
+			del.move(-23, rect.height()-20);
 			//moveforward.move(x2+3, 0);
 			//moveback.move(x2+3, 20);
 		} else {
@@ -2067,10 +1819,6 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 	};
 
 	function stopResizePull() {
-    inner_text_rect.size(rect.height(),45)
-    inner_text_group.move(0,rect.height())
-    inner_text_group.show();
-    inner_text.move(rect.height()/2,0)
 		if (debuggable) console.log("stopResizePull");
 		rect_outer.hide().attr({ stroke: "green" });
 		document.removeEventListener('mousemove', resizePull);
@@ -2097,8 +1845,8 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 	};
 
 	//resizing
-	arrowg.mousedown(function() {
-    inner_text_group.hide();
+	arrow.mousedown(function() {
+
 		pull.data('nmaxx', 0)
 		pull.data('nmaxy', 0)
 
@@ -2133,9 +1881,8 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 		pull.click(function(e) {
 			//e.stopPropagation();
 			rect_outer.show().attr({ stroke: "green" });
-      menu_backgrnd.show()
-      menu_backgrnd2.show()
-			arrowg.show()
+
+			arrow.show()
 			del.show()
 			settings.show()
 			//moveforward.show();
@@ -2145,7 +1892,7 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 				var xx = (e.pageX - scalegroup.x())/actualZoom;
 				var yy = (e.pageY - scalegroup.y())/actualZoom;
 
-				if (pull.insideGbox(e.pageX, e.pageY)) {
+				if (pull.inside(xx, yy)) {
 					if (debuggable) console.log("inside");
 				} else {
 					if (e.target.nodeName != 'A') {
@@ -2159,9 +1906,7 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 							$('#input_textarea').hide()
 						} */
 						rect_outer.hide().attr({ stroke: "#d9534f" });
-            menu_backgrnd.hide()
-            menu_backgrnd2.hide()
-            arrowg.hide();
+						arrow.hide();
 						del.hide();
 						settings.hide();
 
@@ -2184,7 +1929,7 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 			var xx = pull.x()*actualZoom - $('#input_textarea').width()/2 + scalegroup.x();
 			var yy = pull.y()*actualZoom + rect_outer.height()*actualZoom/2 + scalegroup.y();
 
-			$('#input_textarea').val(inner_text.text())
+			$('#input_textarea').val($('#' + rect.attr('id')+'_inner_text').html())
 			$('#input_textarea').show()
 			$('#input_textarea').css({'position':'absolute', 'left': xx, 'top': yy});
 			$('#input_textarea').focus();
@@ -2195,7 +1940,7 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 
 				//e.pageX/actualZoom - pull.x() - scalegroup.x()/actualZoom;
 
-				if (pull.insideGbox(e.pageX, e.pageY)) {
+				if (pull.inside(xx, yy)) {
 					if (debuggable) console.log("inside");
 				} else {
 					if (e.target.nodeName != 'A') {
@@ -2204,33 +1949,8 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 
 						if ( $('#input_textarea').is(":visible") ) {
 							if (debuggable) console.log("visible");
-
-              $('#input_textarea').hide()
-
-              if ($('#input_textarea').val()!='') {
-								inner_text.show();
-
-                innertext = $('#input_textarea').val();
-
-                inner_text.text(function(add) {
-                  $.each(innertext.split('\n'), function(k, val){
-                    add.tspan(val).newLine()
-                  });
-                })
-
-                var linesset = inner_text.lines()
-                if (debuggable) console.log("linesset", linesset);
-                linesset.each(function(i, children) {
-                  if (debuggable) console.log("this id " + this.attr('id') + " this.length " + this.length());
-                  this.dx(-this.length()/2)
-                })
-                pull.data('inner_text', inner_text.text());
-                if (debuggable) console.log("INNER TEXT " + inner_text.text());
-
-							} else {
-								inner_text.hide();
-                inner_text.clear();
-							}
+							$('#' + rect.attr('id')+'_inner_text').html($('#input_textarea').val());
+							pull.data({inner_text: $('#input_textarea').val()});
 							if ($('#input_textarea').val()!='') {
 								inner_text.show();
 							} else {
@@ -2302,106 +2022,112 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 		var startx;
 		var starty;
 
-    function showPullNodes(toggler) {
-      // show|hide nodes
-			scalegroup.each(function(i, children) {
-				if (this.data('parent')==pull.attr('id')) {
-					(toggler) ? this.show() : this.hide()
-				}
-				if (this.data('parents')!=undefined && this.data('parents').split(',').indexOf(pull.attr('id'))!=-1) {
-					if (debuggable) console.log('parents ' + this.data('parents') + ' ' + this.attr('id'));
-					(toggler) ? this.show() : this.hide()
-				}
-			});
-    }
-
-
 		pull.on('dragstart', function(e) {
 			$('.graph').off('mousedown')
 
 			startx = this.x()
 			starty = this.y()
 
+			//hide nodes
+			scalegroup.each(function(i, children) {
+				if (this.data('parent')==pull.attr('id')) {
+					//console.log('parent ' + this.data('parent') + ' ' + this.attr('id'));
+					this.hide();
+				}
+				//this.data('parents').split(',').indexOf(pull.attr('id'))
+
+				//var arr = this.data('parents');
+
+				if (this.data('parents')!=undefined && this.data('parents').split(',').indexOf(pull.attr('id'))!=-1) {
+					//console.log('parents ' + this.data('parents') + ' ' + this.attr('id'));
+					this.hide();
+				}
+				/*
+				if (this.data('parents')==pull.attr('id')) {
+					console.log('parents ' + this.data('parents') + ' ' + this.attr('id'));
+					this.hide();
+				}
+
+				$.inArray(pull.attr('id'), this.data('parents').split(','))
+
+				var arr = this.data('parents').split(',');
+				*/
+
+			});
+
+
 
 		})
 
 		var drgmove = false;
-    var pullNodesVisible = true;
 
 		pull.on('dragmove', function(e) {
-      if (Math.abs(this.x()-startx)>10 || Math.abs(this.y()-starty)>10 || drgmove) {
-        drgmove = true;
-        if (debuggable) console.log('pull moved over 10 px! this.x='+this.x() + ' start.x=' + startx);
+			drgmove = true;
+			//if (debuggable) console.log('dragmove');
+			pull.hide()
+			clonegroup.show()
+			clonegroup.move(startx+movedx,starty+movedy)
 
-        if (pullNodesVisible) {
-          pullNodesVisible = false
-          showPullNodes(pullNodesVisible)
-          pull.hide()
-    			clonegroup.show()
-        }
+			movedx = e.detail.delta.movedX
+			movedy = e.detail.delta.movedY
 
-  			clonegroup.move(startx+movedx,starty+movedy)
+			//clone.move(movedx, movedy)
+			/*
+			$('.graph').offset().left;
+			$('.graph').offset().top;
+			*/
 
-  			movedx = e.detail.delta.movedX
-  			movedy = e.detail.delta.movedY
+			// if (debuggable) console.log('pageX=' + (e.detail.event.pageX - scalegroup.x())/actualZoom + ' pageY=' + (e.detail.event.pageY - scalegroup.y())/actualZoom );
 
-        //draw red if inside other pull
-  			scalegroup.each(function(i, children) {
-  				if (this.data('type')=='pull') {
-            if (this.insideGbox(e.detail.event.pageX, e.detail.event.pageY) && this.attr('id')!=pull.attr('id')) {
-  						this.first().attr({ fill: 'red'});
-  						this.attr({ 'cursor': 'not-allowed'});
-  					} else {
-  						this.first().attr({ fill: '#f5f5f5'});
-  					}
-  				}
-  			});
-      }
+			//draw red if inside other pull
+			scalegroup.each(function(i, children) {
+				if (this.data('type')=='pull') {
+					if (this.inside((e.detail.event.pageX - scalegroup.x())/actualZoom, (e.detail.event.pageY - scalegroup.y())/actualZoom) && this.attr('id')!=pull.attr('id')) {
+						// if (debuggable) console.log('2 pageX=' + (e.detail.event.pageX - scalegroup.x())/actualZoom + ' pageY=' + (e.detail.event.pageY - scalegroup.y())/actualZoom + ' inside ' + this.attr('id'));
+						this.first().attr({ fill: 'red'});
+						this.attr({ 'cursor': 'not-allowed'});
+					} else {
+						this.first().attr({ fill: '#f5f5f5'});
+					}
+
+				}
+			});
 		})
 
 		pull.on('dragend', function(e) {
-      if (drgmove) {
-        //draw red if inside other pull
-  			scalegroup.each(function(i, children) {
-  				if (this.data('type')=='pull' && this.attr('id')!=pull.attr('id') ) {
-  					if (debuggable) console.log('eX=' + e.detail.event.pageX/actualZoom + ' eY=' + e.detail.event.pageY/actualZoom)
-  					if (this.insideGbox(e.detail.event.pageX, e.detail.event.pageY)) {
-  						if (debuggable) console.log('inside ' + this.attr('id'));
-  						pull.move(startx,starty)
-  						movedx = 0;
-  						movedy = 0;
-  						this.first().attr({ fill: '#f5f5f5'});
-  					}
-  					this.attr({ 'cursor': 'default'});
-  				}
-  			});
+			clonegroup.hide()
+			pull.show();
 
-        if (!pullNodesVisible) {
-          pullNodesVisible = true
-          showPullNodes(pullNodesVisible)
-          clonegroup.hide()
-    			pull.show();
-        }
+			//draw red if inside other pull
+			scalegroup.each(function(i, children) {
+				if (this.data('type')=='pull' && this.attr('id')!=pull.attr('id') ) {
+					if (debuggable) console.log('eX=' + e.detail.event.pageX/actualZoom + ' eY=' + e.detail.event.pageY/actualZoom)
+					if (this.inside((e.detail.event.pageX - scalegroup.x())/actualZoom, (e.detail.event.pageY - scalegroup.y())/actualZoom)) {
+						if (debuggable) console.log('inside ' + this.attr('id'));
+						pull.move(startx,starty)
+						movedx = 0;
+						movedy = 0;
+						this.first().attr({ fill: '#f5f5f5'});
+					}
+					this.attr({ 'cursor': 'default'});
+				}
+			});
 
-        scalegroup.each(function(i, children) {
-  				if (this.data('parent')==pull.attr('id')) {
-  					this.dmove(movedx, movedy)
-  				}
-  			});
+			scalegroup.each(function(i, children) {
+				if (this.data('parent')==pull.attr('id')) {
+					this.show()
+					if(this.data('type')!='connection') {
+						this.dmove(movedx, movedy)
+					}
+					if (drgmove) updatePolyline(this.attr('id'))
+				}
 
-        scalegroup.each(function(i, children) {
-          if (this.data('type')=='connection') {
-            this.data('positionX', this.data('positionX')+movedx)
-            this.data('positionY', this.data('positionY')+movedy)
+				if (this.data('parents')!=undefined && this.data('parents').split(',').indexOf(pull.attr('id'))!=-1) {
+					//console.log('parents ' + this.data('parents') + ' ' + this.attr('id'));
+					this.show();
+				}
+			});
 
-            this.update(true);
-          }
-        })
-        drgmove = false
-      } else {
-        pull.move(startx,starty)
-
-      }
 
 			movedx = 0;
 			movedy = 0;
@@ -2446,7 +2172,7 @@ function addPull(innertext, id, oraid, xcoor, ycoor, width, height, zndex)  {
 				var xx = (e.pageX - scalegroup.x())/actualZoom;
 				var yy = (e.pageY - scalegroup.y())/actualZoom;
 
-				if (inner_text.insideGbox(e.pageX, e.pageY)) {
+				if (inner_text.inside(xx, yy)) {
 					if (debuggable) console.log("inside");
 					//document.removeEventListener('mousedown', arguments.callee);
 				} else {
@@ -2468,7 +2194,7 @@ var l_model_id;
 var l_proc_id;
 
 function saveGraph() {
-	//$('#loader').show();
+	$('#loader').show();
 	var nodes = []
 	var links = []
 
@@ -2527,7 +2253,8 @@ function saveGraph() {
 				/*oraid: this.data('oraid'),*/
 				idfrom: this.data('idfrom'),
 				idto: this.data('idto'),
-        path: this.data('path'),
+				pos_from: this.data('pos_from'),
+				pos_to: this.data('pos_to'),
 				dash: this.data('dash')
 			});
 		}
@@ -2540,20 +2267,19 @@ function saveGraph() {
 
 	var flowChartJson = JSON.stringify(flowChart);
 
-	//$('#jsonOutput').text(flowChartJson);
-  console.log(flowChartJson)
+	$('#jsonOutput').text(flowChartJson);
 
 	var data_send= flowChartJson;//JSON.stringify(JSON.parse(data)) ;//проверка на целостность json
 	data_send=encodeURI(data_send);
 	//var model_id=5;//id схемы в оракле
 
-	/*var result;
+	var result;
 	$.ajax({
 		url:'ais_wf.p_model_json.p_add',
 		type:'POST',
-		//data: {v_scheme:data_send,v_model_id:l_model_id,v_uniq_id:Math.random()},
-		//contentType: "application/x-www-form-urlencoded;charset=windows-1251",
-		contentType: "application/x-www-form-urlencoded;charset=UTF-8",
+		data: {v_scheme:data_send,v_model_id:l_model_id,v_uniq_id:Math.random()},
+		contentType: "application/x-www-form-urlencoded;charset=windows-1251",
+		//contentType: "application/x-www-form-urlencoded;charset=UTF-8",
 		async: false,
 		response:'text',
 		success:function (msg){result=msg}
@@ -2574,7 +2300,7 @@ function saveGraph() {
 
 
 
-	setTimeout(function() { $("#loader").hide() }, 500);*/
+	setTimeout(function() { $("#loader").hide() }, 500);
 
 };
 
@@ -2613,8 +2339,7 @@ function loadGraph(model_id, is_edit, is_admin, proc_id){
 
 	$.ajax({
 	  //url:'ais_wf.p_model_json.p_load',
-    //url:'data.txt',
-    url:'masdata.txt',
+    url:'data.txt',
     //type:'POST',
     type:'GET',
 	  //data: {v_model_id:model_id,v_proc_id:proc_id,v_uniq_id:Math.random()},
@@ -2643,8 +2368,8 @@ function loadGraph(model_id, is_edit, is_admin, proc_id){
 		//alert(result)
 		//alert(data)
 
-		//if (debuggable) var flowChartJson = $('#jsonOutput').text();
-		//if (debuggable) console.log("flowChartJson " + flowChartJson);
+		if (debuggable) var flowChartJson = $('#jsonOutput').text();
+		if (debuggable) console.log("flowChartJson " + flowChartJson);
 		var flowChart = JSON.parse(data);
 		var nodes = flowChart.nodes;
 		var links = flowChart.links;
@@ -2672,14 +2397,12 @@ function loadGraph(model_id, is_edit, is_admin, proc_id){
 			if (elem.positionY < miny) miny = elem.positionY;
 		});
 
-		//if (debuggable)
-    console.log("min x=" + minx + " y=" + miny);
+		if (debuggable) console.log("min x=" + minx + " y=" + miny);
 
 		x_offset = minx;
 		y_offset = miny;
 
-		//if (debuggable)
-    console.log("x_offset=" + x_offset + " y_offset=" + y_offset);
+		if (debuggable) console.log("x_offset=" + x_offset + " y_offset=" + y_offset);
 		if (!editable) {
 			x_offset -= 10;
 			y_offset -= 10;
@@ -2692,38 +2415,26 @@ function loadGraph(model_id, is_edit, is_admin, proc_id){
 
     //find max id
     var maxids = [];
-    $.each(nodes, function( index, elem ) {
-      maxids.push(parseInt(elem.id.substr(elem.id.indexOf("G")+1)))
-    });
-    $.each(links, function( index, elem ) {
-      maxids.push(parseInt(elem.id.substr(elem.id.indexOf("G")+1)))
-    });
-
-    //find max id
-    SVG.did = Math.max.apply(null, maxids);
-    console.log("SVG.did " + SVG.did);
-    // SVG.did = 1000
-
 
 		//drawing
 		$.each(nodes, function( index, elem ) {
 			if (elem.type === 'circle') {
-				addCircle(elem.subtype, elem.inner_type, elem.inner_text, elem.id, elem.oraid, elem.positionX, elem.positionY, elem.parent)
+				addCircle(elem.subtype, elem.inner_type, elem.inner_text, elem.id, elem.oraid, elem.positionX-x_offset, elem.positionY-y_offset, elem.parent)
 				if (debuggable) console.log("loading " + elem.type + " with id=" + elem.id);
 				if (elem.positionX > maxx) maxx = elem.positionX;
 				if (elem.positionY > maxy) maxy = elem.positionY;
 			} else if (elem.type === 'task') {
-				addTask(elem.inner_type, elem.inner_text, elem.id, elem.oraid, elem.positionX, elem.positionY, elem.parent)
+				addTask(elem.inner_type, elem.inner_text, elem.id, elem.oraid, elem.positionX-x_offset, elem.positionY-y_offset, elem.parent)
 				if (debuggable) console.log("loading " + elem.type + " with id=" + elem.id);
 				if (elem.positionX > maxx) maxx = elem.positionX;
 				if (elem.positionY > maxy) maxy = elem.positionY;
 			} else if (elem.type === 'decision') {
-				addDecision(elem.inner_type, elem.inner_text, elem.id, elem.oraid, elem.positionX, elem.positionY, elem.parent)
+				addDecision(elem.inner_type, elem.inner_text, elem.id, elem.oraid, elem.positionX-x_offset, elem.positionY-y_offset, elem.parent)
 				if (debuggable) console.log("loading " + elem.type + " with id=" + elem.id);
 				if (elem.positionX > maxx) maxx = elem.positionX;
 				if (elem.positionY > maxy) maxy = elem.positionY;
 			} else if (elem.type === 'pull') {
-				addPull(elem.inner_text, elem.id, elem.oraid, elem.positionX, elem.positionY, elem.width, elem.height, elem.zindex)
+				addPull(elem.inner_text, elem.id, elem.oraid, elem.positionX-x_offset, elem.positionY-y_offset, elem.width, elem.height, elem.zindex)
 				if (debuggable) console.log("loading " + elem.type + " with id=" + elem.id);
 				if (elem.positionX + elem.width > maxx) maxx = elem.positionX + elem.width;
 				if (elem.positionY + elem.height > maxy) maxy = elem.positionY + elem.height;
@@ -2736,22 +2447,14 @@ function loadGraph(model_id, is_edit, is_admin, proc_id){
 		});
 
 		$.each(links, function( index, elem ) {
-			//drawPolyline(elem.idfrom, elem.idto, elem.inner_text, elem.positionX-x_offset, elem.positionY-y_offset, elem.id, elem.pos_from, elem.pos_to, elem.dash)
-
-      var prop = { fromid: elem.idfrom,
-                     toid: elem.idto,
-                innertext: elem.inner_text,
-                positionx: elem.positionX,
-                positiony: elem.positionY,
-                       id: elem.id,
-                     path: elem.path,
-                     dashed: elem.dash };
-
-      scalegroup.add( svg.bpmnline( prop ) );
-      //scalegroup.add( svg.bpmnline(elem.idfrom, elem.idto, elem.inner_text, elem.positionX-x_offset, elem.positionY-y_offset, elem.id, elem.pos_from, elem.pos_to, elem.dash) );
+			drawPolyline(elem.idfrom, elem.idto, elem.inner_text, elem.positionX-x_offset, elem.positionY-y_offset, elem.id, elem.pos_from, elem.pos_to, elem.dash)
       maxids.push(parseInt(elem.id.substr(elem.id.indexOf("G")+1)))
 		});
 
+    //find max id
+    SVG.did = Math.max.apply(null, maxids);
+    console.log("SVG.did " + SVG.did);
+    // SVG.did = 1000
 
 		if (debuggable) console.log("max x=" + maxx + " y=" + maxy);
 
@@ -2807,12 +2510,59 @@ function loadGraph(model_id, is_edit, is_admin, proc_id){
 
 };
 
+function drawLine(idfrom, idto){
+	var elementfrom = SVG.get(idfrom);
+	var elementto = SVG.get(idto);
+
+	var cnn = elementfrom.connectable({
+		container: links,
+		markers: markers
+	}, elementto);
+	cnn.setLineColor("#f0ad4e");
+
+	connections.push({
+		idfrom: cnn.source.attr('id'),
+		idto: cnn.target.attr('id')
+
+	});
+
+	if (debuggable) console.log('source=' + cnn.source + " targ=" + cnn.target);
+	if (debuggable) console.log('line id=' + cnn.line.attr('id'));
+};
+
+function delLine(nodeid) {
+	if (debuggable) console.log("nodeid=" + nodeid)
+	$.each(lines, function( index, elem ) {
+		if (debuggable) console.log("before id=" + elem.lineid + " from=" + elem.idfrom + " to=" + elem.idto)
+	});
+	lines = $.grep(lines, function (elem, index) {
+		if (elem.idfrom == nodeid || elem.idto == nodeid) {
+			SVG.get(elem.lineid).remove();
+			if (debuggable) console.log("index=" + index)
+			return false;
+		}
+		return true; // keep the element in the array
+	});
+
+	$.each(lines, function( index, elem ) {
+		if (elem.idfrom == nodeid || elem.idto == nodeid) {
+			SVG.get(elem.lineid).remove();
+			lines.splice(index,1)
+			if (debuggable) console.log("index=" + index)
+		}
+	});
+
+	$.each(lines, function( index, elem ) {
+		if (debuggable) console.log("after id=" + elem.lineid + " from=" + elem.idfrom + " to=" + elem.idto)
+	});
+};
+
 
 function goBack() {
-	if (debuggable) console.log('go back')
+	console.log('go back')
 
 	steps.forEach(function(entry) {
-		if (debuggable) console.log(entry);
+		console.log(entry);
 	});
 
 	var todel = steps.pop();
@@ -2880,53 +2630,7 @@ function paning(e) {
 	})
 };
 
-function edgeOfView(rect, deg) {
-  var twoPI = Math.PI*2;
-  var theta = deg * Math.PI / 180;
 
-  while (theta < -Math.PI) {
-    theta += twoPI;
-  }
-
-  while (theta > Math.PI) {
-    theta -= twoPI;
-  }
-
-  var rectAtan = Math.atan2(rect.height, rect.width);
-  var tanTheta = Math.tan(theta);
-  var region;
-
-  if ((theta > -rectAtan) && (theta <= rectAtan)) {
-      region = 1;
-  } else if ((theta > rectAtan) && (theta <= (Math.PI - rectAtan))) {
-      region = 2;
-  } else if ((theta > (Math.PI - rectAtan)) || (theta <= -(Math.PI - rectAtan))) {
-      region = 3;
-  } else {
-      region = 4;
-  }
-
-  var edgePoint = {x: rect.width/2, y: rect.height/2};
-  var xFactor = 1;
-  var yFactor = 1;
-
-  switch (region) {
-    case 1: yFactor = -1; break;
-    case 2: yFactor = -1; break;
-    case 3: xFactor = -1; break;
-    case 4: xFactor = -1; break;
-  }
-
-  if ((region === 1) || (region === 3)) {
-    edgePoint.x += xFactor * (rect.width / 2.);                                     // "Z0"
-    edgePoint.y += yFactor * (rect.width / 2.) * tanTheta;
-  } else {
-    edgePoint.x += xFactor * (rect.height / (2. * tanTheta));                        // "Z1"
-    edgePoint.y += yFactor * (rect.height /  2.);
-  }
-
-  return edgePoint;
-};
 
 
 

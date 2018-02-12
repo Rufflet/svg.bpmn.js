@@ -1,12 +1,12 @@
 /*!
 * svg.js - A lightweight library for manipulating and animating SVG.
-* @version 2.3.5
+* @version 2.3.4
 * http://www.svgjs.com
 *
 * @copyright Wout Fierens <wout@woutfierens.com>
 * @license MIT
 *
-* BUILT: Fri Oct 21 2016 13:38:14 GMT-0200 (WGST)
+* BUILT: Thu Aug 04 2016 12:47:18 GMT+0200 (CEST)
 */;
 (function(root, factory) {
   if (typeof define === 'function' && define.amd) {
@@ -548,23 +548,19 @@ SVG.extend(SVG.PointArray, {
   }
   // Parse point string
 , parse: function(array) {
-    var points = []
-
     array = array.valueOf()
 
     // if already is an array, no need to parse it
     if (Array.isArray(array)) return array
 
+    // split points
+    array = this.split(array)
+
     // parse points
-    array = array.trim().split(/\s+|,/)
-
-    // validate points - https://svgwg.org/svg2-draft/shapes.html#DataTypePoints
-    // Odd number of coordinates is an error. In such cases, drop the last odd coordinate.
-    if (array.length % 2 !== 0) array.pop()
-
-    // wrap points in two-tuples and parse points as floats
-    for(var i = 0, len = array.length; i < len; i = i + 2)
-      points.push([ parseFloat(array[i]), parseFloat(array[i+1]) ])
+    for (var i = 0, il = array.length, p, points = []; i < il; i++) {
+      p = array[i].split(',')
+      points.push([parseFloat(p[0]), parseFloat(p[1])])
+    }
 
     return points
   }
@@ -1286,7 +1282,6 @@ SVG.FX = SVG.invent({
     this.paused = false
     this.lastPos = 0
     this.pos = 0
-    this._speed = 1
   }
 
 , extend: {
@@ -1330,7 +1325,7 @@ SVG.FX = SVG.invent({
 
     /**
      * sets or returns the target of this animation
-     * @param null || target SVG.Element which should be set as new target
+     * @param null || target SVG.Elemenet which should be set as new target
      * @return target || this
      */
   , target: function(target){
@@ -1344,12 +1339,12 @@ SVG.FX = SVG.invent({
 
     // returns the position at a given time
   , timeToPos: function(timestamp){
-      return (timestamp - this.situation.start) / (this.situation.duration/this._speed)
+      return (timestamp - this.situation.start) / (this.situation.duration)
     }
 
     // returns the timestamp from a given positon
   , posToTime: function(pos){
-      return this.situation.duration/this._speed * pos + this.situation.start
+      return this.situation.duration * pos + this.situation.start
     }
 
     // starts the animationloop
@@ -1368,7 +1363,7 @@ SVG.FX = SVG.invent({
       // dont start if already started
       if(!this.active && this.situation){
         this.situation.start = +new Date + this.situation.delay
-        this.situation.finish = this.situation.start + this.situation.duration/this._speed
+        this.situation.finish = this.situation.start + this.situation.duration
 
         this.initAnimations()
         this.active = true
@@ -1542,36 +1537,25 @@ SVG.FX = SVG.invent({
 
     // set the internal animation pointer to the specified position and updates the visualisation
   , at: function(pos){
-      var durDivSpd = this.situation.duration/this._speed
-
       this.pos = pos
-      this.situation.start = +new Date - pos * durDivSpd
-      this.situation.finish = this.situation.start + durDivSpd
+      this.situation.start = +new Date - pos * this.situation.duration
+      this.situation.finish = this.situation.start + this.situation.duration
       return this.step(true)
     }
 
-    /**
-     * sets or returns the speed of the animations
-     * @param speed null || Number The new speed of the animations
-     * @return Number || this
-     */
+    // speeds up the animation by the given factor
+    // this changes the duration of the animation
   , speed: function(speed){
-      if (speed === 0) return this.pause()
-
-      if (speed) {
-        this._speed = speed
-        return this.at(this.situation.reversed ? 1-this.pos : this.pos)
-      } else return this._speed
+      this.situation.duration = this.situation.duration * this.pos + (1-this.pos) * this.situation.duration / speed
+      this.situation.finish = this.situation.start + this.situation.duration
+      return this.at(this.pos)
     }
-
     // Make loopable
   , loop: function(times, reverse) {
-      var c = this.last()
-
       // store current loop and total loops
-      c.loop = c.loops = times || true
+      this.situation.loop = this.situation.loops = times || true
 
-      if(reverse) c.reversing = true
+      if(reverse) this.last().reversing = true
       return this
     }
 
@@ -1887,16 +1871,6 @@ SVG.FX = SVG.invent({
 
       return this
     }
-    // Set/Get the speed of the animations
-  , speed: function(speed) {
-      if (this.fx)
-        if (speed == null)
-          return this.fx.speed()
-        else
-          this.fx.speed(speed)
-
-      return this
-    }
   }
 
 })
@@ -2056,7 +2030,6 @@ SVG.extend(SVG.FX, {
     return this
   }
 })
-
 SVG.BBox = SVG.invent({
   // Initialize
   create: function(element) {
@@ -4774,8 +4747,6 @@ var sugar = {
   var i, extension = {}
 
   extension[m] = function(o) {
-    if (typeof o == 'undefined')
-      return this
     if (typeof o == 'string' || SVG.Color.isRgb(o) || (o && typeof o.fill === 'function'))
       this.attr(m, o)
 

@@ -9,13 +9,13 @@ This library depends on:
  - [svg.draggy.js](https://github.com/jillix/svg.draggy.js)
  - [Fontello Icons](https://github.com/fontello/fontello)
 
-
 ```html
-<script src="js/svg.min.js"></script>
-<script src="js/svg.draggy.min.js"></script>
-<script src="js/svg.bpmnmodeler.js"></script>
-<script src="js/svg.bpmnnode.js"></script>
-<script src="js/svg.bpmnline.js"></script>
+<script src="path/to/svg.js"></script>
+<script src="path/to/svg.draggy.js"></script>
+<script src="path/to/svg.bpmn.js"></script>
+
 ```
 
 ## Documentation
+
+TBD
