@@ -62,7 +62,7 @@ line {
     stroke-width: 2px;
 }
 
-#baseLayer {
+#baseLayer, #svg-canvas {
     cursor: default;
     background: #FCFCFC;
     height: 100%;
